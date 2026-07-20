@@ -1,0 +1,41 @@
+{
+    "vehicle": {
+        "type": "object",
+        "properties": {
+            "make": {
+                "type": "string",
+                "description": "The manufacturer of the vehicle"
+            },
+            "model": {
+                "type": "string",
+                "description": "The model of the vehicle"
+            },
+            "year": {
+                "type": "integer",
+                "description": "The year the vehicle was manufactured"
+            },
+            "vin": {
+                "type": "string",
+                "description": "The Vehicle Identification Number"
+            },
+            "vehicle_registration_number": {
+                "type": "string"    
+                }
+        },
+        "required": ["make", "model", "year", "vehicle_registration_number"]
+    },
+    "user_id": {
+        "type": "string",
+        "description": "The unique identifier for the user associated with the vehicle"
+    },
+    "vehicle_type": {
+        "type": "string",
+        "description": "The type of vehicle (e.g., van, unit, trailer, rigid)",
+        "enum": ["van", "unit", "trailer", "rigid"]
+    },
+     "vehicle_configuration": {
+        "type": "string",
+        "description": "The configuration of your vehicle (e.g., refrigerated, flatbed, tanker, curtain sider, box, skeleton)",
+        "enum": ["refrigerated", "flatbed", "tanker", "curtain sider", "box", "skeleton"]
+    }
+}

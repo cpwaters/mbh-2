@@ -1,0 +1,114 @@
+{
+    "source_company_name": {
+        "type": "string"
+    },
+    "source_company_id": {
+        "type": "string"
+    },
+    "source_company_address": {
+        "type": "object",
+        "properties": {
+            "street": { "type": "string" },
+            "town": { "type": "string" },
+            "city": { "type": "string" },
+            "postcode": { "type": "string" }
+        },
+        "required": ["street", "city", "postcode"]
+    },
+    "source_company_contact": {
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "phone": { "type": "string" }
+        },
+        "required": ["name", "email"]
+    },
+     "destination_company_name": {
+        "type": "string"
+    },
+    "destination_company_id": {
+        "type": "string"
+    },
+    "destination_company_address": {
+        "type": "object",
+        "properties": {
+            "street": { "type": "string" },
+            "town": { "type": "string" },
+            "city": { "type": "string" },
+            "postcode": { "type": "string" }
+        },
+        "required": ["street", "city", "postcode"]
+    },
+    "destination_company_contact": {
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "phone": { "type": "string" }
+        },
+        "required": ["name", "email"]
+    },
+    "consignment_details": {
+        "type": "object",
+        "properties": {
+            "consignment_id": { "type": "string" },
+            "description": { "type": "string" },
+            "weight_kg": { "type": "number" },
+            "volume_m3": { "type": "number" },
+            "pallet_count": { "type": "integer" }
+        },
+        "required": ["consignment_id", "description", "weight_kg"]
+    },
+    "pickup_date": {
+        "type": "object",
+        "properties": {
+        "date" : {"type": "string", "format": "date"},
+        "time" : {"type": "string", "format": "time"}
+        }
+    },
+    "delivery_date": {"type": "object",
+        "properties": {
+        "date" : {"type": "string", "format": "date"},
+        "time" : {"type": "string", "format": "time"}
+        }
+    },
+    "distance": {
+        "type": "number"
+    },
+    "special_instructions": {
+        "type": "string"
+    },
+    "vehicle": {
+        "type": "object",
+        "properties": {
+            "van": { "type": "boolean" },
+            "rigid": { "type": "boolean" },
+            "artic": { "type": "boolean" }
+        }
+    },
+    "vehicle_type": { "type":"object",
+        "properties": {
+            "refridgerated": { "type": "boolean" },
+            "box": { "type": "boolean" },
+            "flat_bed": { "type": "boolean" },
+            "low_loader": { "type": "boolean" },
+            "skeleton": { "type": "boolean" },
+            "tanker": { "type": "boolean" }
+        }
+    },
+    "payment_amount": {
+        "type": "number"
+    },
+    "payment_type": {
+        "type":"object",
+        "properties": {
+            "invoiced": { "type": "boolean" },
+            "instant_payment": { "type": "boolean" }
+        }
+    },
+    "active_loads_status": {
+        "type": "string",
+        "enum": ["open", "accepted", "collected", "in_transit", "delivered", "closed", "cancelled", "paid"]
+    }
+}

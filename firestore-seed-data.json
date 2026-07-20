@@ -1,0 +1,76 @@
+{
+  "loads": {
+    "1": {
+      "id": "1",
+      "origin": "London - Tesco Distribution Centre",
+      "destination": "Manchester - Asda Warehouse",
+      "distance": "208 miles",
+      "weight": "19 tonnes",
+      "pallets": 21,
+      "payment": "£950",
+      "pickupDate": "10 Dec 2025",
+      "pickupTime": "08:00",
+      "deliveryDate": "11 Dec 2025",
+      "deliveryTime": "14:00"
+    },
+    "2": {
+      "id": "2",
+      "origin": "Birmingham - Morrisons Depot",
+      "destination": "Glasgow - Sainsbury's Hub",
+      "distance": "298 miles",
+      "weight": "17.5 tonnes",
+      "pallets": 19,
+      "payment": "£750",
+      "pickupDate": "11 Dec 2025",
+      "pickupTime": "06:30",
+      "deliveryDate": "11 Dec 2025",
+      "deliveryTime": "18:00"
+    },
+    "3": {
+      "id": "3",
+      "origin": "Edinburgh - Waitrose Distribution",
+      "destination": "Newcastle - Co-op Logistics",
+      "distance": "118 miles",
+      "weight": "11.3 tonnes",
+      "pallets": 13,
+      "payment": "£600",
+      "pickupDate": "12 Dec 2025",
+      "pickupTime": "10:00",
+      "deliveryDate": "12 Dec 2025",
+      "deliveryTime": "15:30"
+    },
+    "4": {
+      "id": "4",
+      "origin": "Bristol - Amazon Fulfillment",
+      "destination": "Leeds - Marks & Spencer Warehouse",
+      "distance": "230 miles",
+      "weight": "20.4 tonnes",
+      "pallets": 23,
+      "payment": "£1,450",
+      "pickupDate": "13 Dec 2025",
+      "pickupTime": "07:00",
+      "deliveryDate": "14 Dec 2025",
+      "deliveryTime": "16:00"
+    }
+  },
+  "activeJobs": {
+    "1": {
+      "id": "1",
+      "origin": "Cardiff - Iceland Foods Depot",
+      "destination": "Southampton - Lidl Distribution",
+      "status": "in_transit",
+      "progress": 65,
+      "payment": "£1,140",
+      "deliveryTime": "Today, 18:00"
+    },
+    "2": {
+      "id": "2",
+      "origin": "Liverpool - Aldi Regional Hub",
+      "destination": "Sheffield - John Lewis Warehouse",
+      "status": "loading",
+      "progress": 15,
+      "payment": "£670",
+      "deliveryTime": "Tomorrow, 10:00"
+    }
+  }
+}

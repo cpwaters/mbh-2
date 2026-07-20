@@ -1,0 +1,278 @@
+import { useState, useEffect } from 'react';
+import { Package, MapPin, Weight, Box, Calendar, Clock, Trash2 } from 'lucide-react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
+
+interface Load {
+  id: string;
+  origin: string;
+  destination: string;
+  distance: number;
+  weight: number;
+  pallets: number;
+  payment: number;
+  pickupDate: string;
+  pickupTime: string;
+  deliveryDate: string;
+  deliveryTime: string;
+  status: 'open' | 'accepted' | 'collected' | 'in_transit' | 'delivered' | 'closed' | 'cancelled' | 'paid';
+  createdBy: string;
+}
+
+const statusColors = {
+  open: 'bg-green-100 text-green-800',
+  accepted: 'bg-blue-100 text-blue-800',
+  collected: 'bg-purple-100 text-purple-800',
+  in_transit: 'bg-yellow-100 text-yellow-800',
+  delivered: 'bg-indigo-100 text-indigo-800',
+  closed: 'bg-gray-100 text-gray-800',
+  cancelled: 'bg-red-100 text-red-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+};
+
+export default function LoadsList() {
+  const [loads, setLoads] = useState<Load[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { currentUser } = useAuth();
+
+  useEffect(() => {
+    const fetchLoads = async () => {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Query loads filtered by current user's ID
+        const loadsCollection = collection(db, 'loads');
+        const loadsQuery = query(loadsCollection, where('createdBy', '==', currentUser.uid));
+        const loadsSnapshot = await getDocs(loadsQuery);
+
+        const loadsData = loadsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            origin: `${data.source_company_address?.city || ''}, ${data.source_company_address?.postcode || ''}`,
+            destination: `${data.destination_company_address?.city || ''}, ${data.destination_company_address?.postcode || ''}`,
+            distance: data.distance || 0,
+            weight: data.consignment_details?.weight_kg || 0,
+            pallets: data.consignment_details?.pallet_count || 0,
+            payment: data.payment_amount || 0,
+            pickupDate: data.pickup_date?.date || '',
+            pickupTime: data.pickup_date?.time || '',
+            deliveryDate: data.delivery_date?.date || '',
+            deliveryTime: data.delivery_date?.time || '',
+            status: data.active_loads_status || 'open',
+            createdBy: data.createdBy || ''
+          } as Load;
+        });
+        setLoads(loadsData);
+        setError(null);
+      } catch (error: any) {
+        console.error('Error fetching loads:', error);
+        setError(error?.message || 'Failed to load data from Firestore');
+        // Set empty array on error to prevent crashes
+        setLoads([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLoads();
+  }, [currentUser]);
+
+  const handleDelete = (id: string) => {
+    // In production, this would call backend API
+    console.log('Delete load:', id);
+    alert('Delete functionality would be implemented here');
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-600">Loading loads...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">All Loads</h1>
+        <p className="text-gray-600">Manage and monitor all created loads</p>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <div className="text-red-600 font-semibold">Error loading loads:</div>
+            <div className="text-red-700">{error}</div>
+          </div>
+          <div className="mt-2 text-sm text-red-600">
+            Please check your Firebase connection and ensure Firestore is properly configured.
+          </div>
+        </div>
+      )}
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Open</p>
+              <p className="text-2xl font-bold text-green-600">
+                {loads.filter(l => l.status === 'open').length}
+              </p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-lg">
+              <Package className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Accepted</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {loads.filter(l => l.status === 'accepted').length}
+              </p>
+            </div>
+            <div className="bg-blue-100 p-3 rounded-lg">
+              <Package className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">In Transit</p>
+              <p className="text-2xl font-bold text-yellow-600">
+                {loads.filter(l => l.status === 'in_transit').length}
+              </p>
+            </div>
+            <div className="bg-yellow-100 p-3 rounded-lg">
+              <Package className="w-6 h-6 text-yellow-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Loads</p>
+              <p className="text-2xl font-bold text-gray-900">{loads.length}</p>
+            </div>
+            <div className="bg-gray-100 p-3 rounded-lg">
+              <Package className="w-6 h-6 text-gray-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Loads List */}
+      <div className="grid gap-4">
+        {loads.map((load) => (
+          <div
+            key={load.id}
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <Package className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span className="font-semibold text-gray-900">{load.origin}</span>
+                    </div>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        statusColors[load.status]
+                      }`}
+                    >
+                      {load.status.charAt(0).toUpperCase() + load.status.slice(1).replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <span className="text-gray-400">→</span>
+                    <span className="font-semibold">{load.destination}</span>
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500">{load.distance} miles</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-green-600">£{load.payment.toLocaleString()}</div>
+                  <div className="text-sm text-gray-500">Payment</div>
+                </div>
+                <button
+                  onClick={() => handleDelete(load.id)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete load"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <Weight className="w-4 h-4 text-gray-500" />
+                <div>
+                  <div className="text-xs text-gray-500">Weight</div>
+                  <div className="font-medium text-gray-900">{load.weight} kg</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Box className="w-4 h-4 text-gray-500" />
+                <div>
+                  <div className="text-xs text-gray-500">Pallets</div>
+                  <div className="font-medium text-gray-900">{load.pallets}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <div>
+                  <div className="text-xs text-gray-500">Pickup</div>
+                  <div className="font-medium text-gray-900">{load.pickupDate}</div>
+                  <div className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {load.pickupTime}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <div>
+                  <div className="text-xs text-gray-500">Delivery</div>
+                  <div className="font-medium text-gray-900">{load.deliveryDate}</div>
+                  <div className="text-xs text-gray-600 mt-0.5 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {load.deliveryTime}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {loads.length === 0 && (
+        <div className="bg-white rounded-lg shadow-md p-12 text-center">
+          <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No loads created yet</h3>
+          <p className="text-gray-600">Create your first load to get started</p>
+        </div>
+      )}
+    </div>
+  );
+}

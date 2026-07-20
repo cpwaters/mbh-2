@@ -1,0 +1,29 @@
+{
+    "active_load_id": {
+        "type": "string",
+        "description": "The unique identifier for the active load"
+    },
+    "load_id": {
+        "type": "string",
+        "description": "The unique identifier for the load associated with this active load"
+    },
+    "vehicle_id": {
+        "type": "string",
+        "description": "The unique identifier for the vehicle assigned to this active load"
+    },
+    "active_loads_status": {
+        "type": "string",
+        "enum": ["open", "accepted", "collected", "in_transit", "delivered", "closed", "cancelled", "paid"]
+    },
+    "progress" : {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "The progress percentage of the active load"
+    },
+    "estimated_delivery_time": {
+        "type": "string",
+        "format": "date-time",
+        "description": "The estimated delivery time for the active load"
+    }
+}

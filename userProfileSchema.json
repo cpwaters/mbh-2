@@ -1,0 +1,130 @@
+{
+    "user_id": {
+        "type": "string"
+    },
+    "username": {
+        "type": "string"
+    },
+    "email": {
+        "type": "string",
+        "format": "email"
+    },
+    "first_name": {
+        "type": "string"
+    },
+    "last_name": {
+        "type": "string"
+    },
+    "date_of_birth": {
+        "type": "string",
+        "format": "date"
+    },
+    "company_name": {
+        "type": "string"
+    },
+    "company_registration_number": {
+        "type": "string"
+    },
+    "company_address": {
+        "type": "object",
+        "properties": {
+            "street": { "type": "string" },
+            "town": { "type": "string" },
+            "city": { "type": "string" },
+            "postcode": { "type": "string" }
+            },
+        "required": ["street", "city", "postcode"]
+    },
+    "company_contact": {
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "phone": { "type": "string" }
+        },
+        "required": ["name", "email"]
+    },
+    "VAT_number": {
+        "type": "string"
+    },
+    "driving_license_number": {
+        "type": "string"
+    },
+    "quantity_of_vehicles": {
+        "type": "integer",
+        "minimum": 1
+    },
+    "rating": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 5
+    },
+    "payment_type": {
+        "type":"object",
+        "properties": {
+            "invoiced": { "type": "boolean" },
+            "instant_payment": { "type": "boolean" }
+        }
+    },
+    "image": {
+        "type": "string",
+        "format": "uri"
+    },
+    "earnings": {
+        "type": "object",
+        "properties": {
+            "today": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Earnings for today in pence/cents"
+            },
+            "week": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Earnings for current week in pence/cents"
+            },
+            "month": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Earnings for current month in pence/cents"
+            }
+        }
+    },
+    "performance": {
+        "type": "object",
+        "properties": {
+            "total_trips": {
+                "type": "integer",
+                "minimum": 0
+            },
+            "total_miles": {
+                "type": "integer",
+                "minimum": 0
+            },
+            "on_time_delivery_percentage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+            }
+        }
+    },
+    "recent_trips": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "format": "date"
+                },
+                "route": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number",
+                    "minimum": 0
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firestore Seeder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background-color: #357ae8;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .logout-btn {
+      background-color: #dc3545;
+    }
+    .logout-btn:hover {
+      background-color: #c82333;
+    }
+    #log {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+    .info {
+      color: blue;
+    }
+    .auth-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #e7f3ff;
+      border-radius: 4px;
+    }
+    .hidden {
+      display: none;
+    }
+    input {
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 200px;
+    }
+    .user-info {
+      color: #333;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔥 Firestore Database Seeder</h1>
+    <p>This tool will populate your Firestore database with sample data based on your schemas.</p>
+
+    <div id="loginSection" class="auth-section">
+      <h3>🔐 Please Sign In First</h3>
+      <input type="email" id="emailInput" placeholder="Email">
+      <input type="password" id="passwordInput" placeholder="Password">
+      <button onclick="signIn()">Sign In</button>
+      <button onclick="signInWithGoogle()">Sign In with Google</button>
+    </div>
+
+    <div id="userSection" class="auth-section hidden">
+      <span class="user-info">Signed in as: <span id="userEmail"></span></span>
+      <button class="logout-btn" onclick="signOut()">Logout</button>
+    </div>
+
+    <div id="actionButtons" class="hidden">
+      <button id="seedBtn" onclick="seedAllData()">🌱 Seed All Data</button>
+      <button id="clearBtn" onclick="clearAllData()">🗑️ Clear All Data</button>
+    </div>
+
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDTYnztmBBveFs5UHU0YpLby68a9Qbj1T8",
+      authDomain: "mybackhaul-21112.firebaseapp.com",
+      projectId: "mybackhaul-21112",
+      storageBucket: "mybackhaul-21112.firebasestorage.app",
+      messagingSenderId: "95219807570",
+      appId: "1:95219807570:web:f0716c83f7e81c554bb68b",
+      measurementId: "G-JN9HQV785R"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type;
+      logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    // Auth state observer
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('userSection').classList.remove('hidden');
+        document.getElementById('actionButtons').classList.remove('hidden');
+        document.getElementById('userEmail').textContent = user.email;
+        log(`✅ Signed in as ${user.email}`, 'success');
+      } else {
+        document.getElementById('loginSection').classList.remove('hidden');
+        document.getElementById('userSection').classList.add('hidden');
+        document.getElementById('actionButtons').classList.add('hidden');
+      }
+    });
+
+    window.signIn = async function() {
+      const email = document.getElementById('emailInput').value;
+      const password = document.getElementById('passwordInput').value;
+
+      if (!email || !password) {
+        log('❌ Please enter email and password', 'error');
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        log('✅ Sign in successful', 'success');
+      } catch (error) {
+        log(`❌ Sign in failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.signInWithGoogle = async function() {
+      try {
+        await signInWithPopup(auth, googleProvider);
+        log('✅ Google sign in successful', 'success');
+      } catch (error) {
+        log(`❌ Google sign in failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.signOut = async function() {
+      try {
+        await firebaseSignOut(auth);
+        log('✅ Signed out', 'success');
+      } catch (error) {
+        log(`❌ Sign out failed: ${error.message}`, 'error');
+      }
+    };
+
+    // Sample data
+    const loads = [
+      {
+        source_company_name: "Tesco Distribution Centre",
+        source_company_id: "TESCO-001",
+        source_company_address: {
+          street: "123 Distribution Way",
+          town: "Dagenham",
+          city: "London",
+          postcode: "RM10 7XS"
+        },
+        source_company_contact: {
+          name: "John Smith",
+          email: "john.smith@tesco.com",
+          phone: "020 1234 5678"
+        },
+        destination_company_name: "Asda Warehouse",
+        destination_company_id: "ASDA-002",
+        destination_company_address: {
+          street: "45 Warehouse Road",
+          town: "Trafford",
+          city: "Manchester",
+          postcode: "M17 1WS"
+        },
+        destination_company_contact: {
+          name: "Sarah Johnson",
+          email: "sarah.johnson@asda.com",
+          phone: "0161 234 5678"
+        },
+        consignment_details: {
+          consignment_id: "CONS-2025-001",
+          description: "Mixed groceries and household items",
+          weight_kg: 19000,
+          volume_m3: 45,
+          pallet_count: 21
+        },
+        pickup_date: {
+          date: "2025-12-10",
+          time: "08:00"
+        },
+        delivery_date: {
+          date: "2025-12-11",
+          time: "14:00"
+        },
+        distance: 208,
+        special_instructions: "Refrigerated goods - maintain 2-8°C throughout transit",
+        vehicle: {
+          van: false,
+          rigid: false,
+          artic: true
+        },
+        vehicle_type: {
+          refridgerated: true,
+          box: false,
+          flat_bed: false,
+          low_loader: false,
+          skeleton: false,
+          tanker: false
+        },
+        payment_type: {
+          invoiced: true,
+          instant_payment: false
+        },
+        active_loads_status: "open",
+        createdBy: auth.currentUser?.uid || "SYSTEM"
+      },
+      {
+        source_company_name: "Morrisons Depot",
+        source_company_id: "MORR-003",
+        source_company_address: {
+          street: "78 Industrial Estate",
+          town: "Nechells",
+          city: "Birmingham",
+          postcode: "B7 5DL"
+        },
+        source_company_contact: {
+          name: "David Williams",
+          email: "david.williams@morrisons.com",
+          phone: "0121 345 6789"
+        },
+        destination_company_name: "Sainsbury's Hub",
+        destination_company_id: "SAIN-004",
+        destination_company_address: {
+          street: "200 Logistics Park",
+          town: "Shieldhall",
+          city: "Glasgow",
+          postcode: "G51 4TE"
+        },
+        destination_company_contact: {
+          name: "Emma Brown",
+          email: "emma.brown@sainsburys.co.uk",
+          phone: "0141 234 5678"
+        },
+        consignment_details: {
+          consignment_id: "CONS-2025-002",
+          description: "Fresh produce and dairy products",
+          weight_kg: 17500,
+          volume_m3: 42,
+          pallet_count: 19
+        },
+        pickup_date: {
+          date: "2025-12-11",
+          time: "06:30"
+        },
+        delivery_date: {
+          date: "2025-12-11",
+          time: "18:00"
+        },
+        distance: 298,
+        special_instructions: "Fragile items - handle with care. Early morning delivery preferred.",
+        vehicle: {
+          van: false,
+          rigid: true,
+          artic: false
+        },
+        vehicle_type: {
+          refridgerated: true,
+          box: false,
+          flat_bed: false,
+          low_loader: false,
+          skeleton: false,
+          tanker: false
+        },
+        payment_type: {
+          invoiced: false,
+          instant_payment: true
+        },
+        active_loads_status: "accepted",
+        createdBy: auth.currentUser?.uid || "SYSTEM"
+      },
+      {
+        source_company_name: "Waitrose Distribution",
+        source_company_id: "WAIT-005",
+        source_company_address: {
+          street: "15 Commerce Street",
+          town: "Leith",
+          city: "Edinburgh",
+          postcode: "EH6 6JJ"
+        },
+        source_company_contact: {
+          name: "Michael Taylor",
+          email: "michael.taylor@waitrose.com",
+          phone: "0131 234 5678"
+        },
+        destination_company_name: "Co-op Logistics",
+        destination_company_id: "COOP-006",
+        destination_company_address: {
+          street: "92 Supply Chain Way",
+          town: "Byker",
+          city: "Newcastle",
+          postcode: "NE6 2YD"
+        },
+        destination_company_contact: {
+          name: "Lisa Anderson",
+          email: "lisa.anderson@coop.co.uk",
+          phone: "0191 234 5678"
+        },
+        consignment_details: {
+          consignment_id: "CONS-2025-003",
+          description: "Organic produce and specialty items",
+          weight_kg: 11300,
+          volume_m3: 28,
+          pallet_count: 12
+        },
+        pickup_date: {
+          date: "2025-12-12",
+          time: "10:00"
+        },
+        delivery_date: {
+          date: "2025-12-12",
+          time: "15:30"
+        },
+        distance: 118,
+        special_instructions: "Temperature-sensitive organic products",
+        vehicle: {
+          van: false,
+          rigid: true,
+          artic: false
+        },
+        vehicle_type: {
+          refridgerated: false,
+          box: true,
+          flat_bed: false,
+          low_loader: false,
+          skeleton: false,
+          tanker: false
+        },
+        payment_type: {
+          invoiced: true,
+          instant_payment: false
+        },
+        active_loads_status: "in_transit",
+        createdBy: auth.currentUser?.uid || "SYSTEM"
+      }
+    ];
+
+    const activeLoads = [
+      {
+        active_load_id: "ACTIVE-001",
+        load_id: "LOAD-001",
+        vehicle_id: "VEH-001",
+        active_loads_status: "in_transit",
+        progress: 65,
+        estimated_delivery_time: "2025-12-11T18:00:00Z",
+        userId: auth.currentUser?.uid || "SYSTEM"
+      },
+      {
+        active_load_id: "ACTIVE-002",
+        load_id: "LOAD-002",
+        vehicle_id: "VEH-002",
+        active_loads_status: "collected",
+        progress: 15,
+        estimated_delivery_time: "2025-12-12T10:00:00Z",
+        userId: auth.currentUser?.uid || "SYSTEM"
+      }
+    ];
+
+    const userProfiles = [
+      {
+        user_id: "USER-001",
+        username: "johndriver",
+        email: "john.driver@example.com",
+        first_name: "John",
+        last_name: "Driver",
+        date_of_birth: "1985-05-15",
+        company_name: "Swift Haulage Ltd",
+        company_registration_number: "12345678",
+        company_address: {
+          street: "123 Business Park",
+          town: "Wembley",
+          city: "London",
+          postcode: "HA9 0WS"
+        },
+        company_contact: {
+          name: "John Driver",
+          email: "contact@swifthaulage.co.uk",
+          phone: "020 8765 4321"
+        },
+        VAT_number: "GB123456789",
+        driving_license_number: "DRIVE123456JD789",
+        quantity_of_vehicles: 3,
+        rating: 4.8,
+        payment_type: {
+          invoiced: true,
+          instant_payment: false
+        },
+        image: "https://example.com/profiles/john-driver.jpg"
+      },
+      {
+        user_id: "USER-002",
+        username: "sarahtransport",
+        email: "sarah.transport@example.com",
+        first_name: "Sarah",
+        last_name: "Transport",
+        date_of_birth: "1990-08-22",
+        company_name: "Transport Solutions UK",
+        company_registration_number: "87654321",
+        company_address: {
+          street: "456 Industrial Way",
+          town: "Trafford Park",
+          city: "Manchester",
+          postcode: "M17 1DW"
+        },
+        company_contact: {
+          name: "Sarah Transport",
+          email: "info@transportsolutions.co.uk",
+          phone: "0161 987 6543"
+        },
+        VAT_number: "GB987654321",
+        driving_license_number: "TRANS987654ST123",
+        quantity_of_vehicles: 5,
+        rating: 4.5,
+        payment_type: {
+          invoiced: false,
+          instant_payment: true
+        },
+        image: "https://example.com/profiles/sarah-transport.jpg"
+      }
+    ];
+
+    const vehicles = [
+      {
+        vehicle: {
+          make: "Mercedes-Benz",
+          model: "Actros 2545",
+          year: 2020,
+          vin: "WDB9634321L234567",
+          vehicle_registration_number: "AB12 CDE"
+        },
+        user_id: "USER-001",
+        vehicle_type: "unit",
+        vehicle_configuration: "refrigerated"
+      },
+      {
+        vehicle: {
+          make: "Volvo",
+          model: "FH16",
+          year: 2021,
+          vin: "YV2ADA40C2A123456",
+          vehicle_registration_number: "FG34 HIJ"
+        },
+        user_id: "USER-001",
+        vehicle_type: "rigid",
+        vehicle_configuration: "box"
+      },
+      {
+        vehicle: {
+          make: "Scania",
+          model: "R450",
+          year: 2022,
+          vin: "YS2R6X20005654321",
+          vehicle_registration_number: "KL56 MNO"
+        },
+        user_id: "USER-002",
+        vehicle_type: "unit",
+        vehicle_configuration: "curtain sider"
+      },
+      {
+        vehicle: {
+          make: "DAF",
+          model: "XF 480",
+          year: 2021,
+          vin: "XLRTE47MS0E123456",
+          vehicle_registration_number: "PQ78 RST"
+        },
+        user_id: "USER-002",
+        vehicle_type: "trailer",
+        vehicle_configuration: "flatbed"
+      }
+    ];
+
+    window.clearAllData = async function() {
+      if (!auth.currentUser) {
+        log('❌ Please sign in first', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('clearBtn');
+      btn.disabled = true;
+
+      try {
+        log('🗑️ Starting to clear all collections...', 'info');
+
+        const collections = ['loads', 'activeLoads', 'userProfiles', 'vehicles'];
+
+        for (const collectionName of collections) {
+          const snapshot = await getDocs(collection(db, collectionName));
+          if (!snapshot.empty) {
+            const batch = writeBatch(db);
+            let count = 0;
+            snapshot.docs.forEach((docSnapshot) => {
+              batch.delete(docSnapshot.ref);
+              count++;
+            });
+            await batch.commit();
+            log(`✓ Cleared ${count} documents from ${collectionName}`, 'success');
+          } else {
+            log(`Collection ${collectionName} is already empty`, 'info');
+          }
+        }
+
+        log('✅ All collections cleared successfully!', 'success');
+      } catch (error) {
+        log(`❌ Error clearing data: ${error.message}`, 'error');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    window.seedAllData = async function() {
+      if (!auth.currentUser) {
+        log('❌ Please sign in first', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('seedBtn');
+      btn.disabled = true;
+
+      try {
+        log('🌱 Starting to seed Firestore...', 'info');
+
+        // Update loads with current user ID
+        const loadsWithUserId = loads.map(load => ({
+          ...load,
+          createdBy: auth.currentUser.uid
+        }));
+
+        // Update activeLoads with current user ID
+        const activeLoadsWithUserId = activeLoads.map(activeLoad => ({
+          ...activeLoad,
+          userId: auth.currentUser.uid
+        }));
+
+        // Add loads
+        log('Adding loads...', 'info');
+        for (let i = 0; i < loadsWithUserId.length; i++) {
+          const docId = `LOAD-${String(i + 1).padStart(3, '0')}`;
+          await setDoc(doc(db, 'loads', docId), loadsWithUserId[i]);
+        }
+        log(`✓ Added ${loadsWithUserId.length} loads`, 'success');
+
+        // Add active loads
+        log('Adding active loads...', 'info');
+        for (const activeLoad of activeLoadsWithUserId) {
+          await setDoc(doc(db, 'activeLoads', activeLoad.active_load_id), activeLoad);
+        }
+        log(`✓ Added ${activeLoadsWithUserId.length} active loads`, 'success');
+
+        // Add user profiles
+        log('Adding user profiles...', 'info');
+        for (const profile of userProfiles) {
+          await setDoc(doc(db, 'userProfiles', profile.user_id), profile);
+        }
+        log(`✓ Added ${userProfiles.length} user profiles`, 'success');
+
+        // Add vehicles
+        log('Adding vehicles...', 'info');
+        for (let i = 0; i < vehicles.length; i++) {
+          const docId = `VEH-${String(i + 1).padStart(3, '0')}`;
+          await setDoc(doc(db, 'vehicles', docId), vehicles[i]);
+        }
+        log(`✓ Added ${vehicles.length} vehicles`, 'success');
+
+        log('✅ Firestore seeding completed successfully!', 'success');
+        log(`📊 Summary:`, 'info');
+        log(`  - loads: ${loadsWithUserId.length} documents`, 'info');
+        log(`  - activeLoads: ${activeLoadsWithUserId.length} documents`, 'info');
+        log(`  - userProfiles: ${userProfiles.length} documents`, 'info');
+        log(`  - vehicles: ${vehicles.length} documents`, 'info');
+
+      } catch (error) {
+        log(`❌ Error seeding data: ${error.message}`, 'error');
+        console.error(error);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    log('✅ Firestore Seeder ready! Please sign in to continue.', 'success');
+  </script>
+</body>
+</html>
