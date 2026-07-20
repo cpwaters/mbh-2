@@ -83,12 +83,70 @@ export default function ActiveJobs() {
       await runTransaction(db, async (transaction) => {
         const activeJobRef = doc(db, 'activeJobs', currentUser.uid);
         const loadRef = doc(db, 'loads', job.loadId);
+        const profileRef = doc(db, 'userProfiles', currentUser.uid);
+
+        const [loadSnap, profileSnap] = await Promise.all([
+          transaction.get(loadRef),
+          transaction.get(profileRef),
+        ]);
+
+        if (!loadSnap.exists()) {
+          throw new Error('Load not found.');
+        }
+        const loadData = loadSnap.data();
+        const paymentPence = Math.round((loadData.payment_amount || 0) * 100);
+        const distanceMiles = loadData.distance || 0;
+
+        const profileData = profileSnap.exists() ? profileSnap.data() : {};
+        const prevEarnings = profileData.earnings || { today: 0, week: 0, month: 0 };
+        const prevPerformance = profileData.performance || {
+          total_trips: 0,
+          total_miles: 0,
+          on_time_delivery_percentage: 0,
+        };
+        const prevTrips = profileData.recent_trips || [];
+
+        // Was this delivered by its scheduled delivery date/time?
+        const scheduledDelivery = new Date(
+          `${loadData.delivery_date?.date || ''}T${loadData.delivery_date?.time || '23:59'}`
+        );
+        const isOnTime = Number.isNaN(scheduledDelivery.getTime()) || new Date() <= scheduledDelivery;
+
+        const prevOnTimeCount = Math.round(
+          (prevPerformance.on_time_delivery_percentage / 100) * prevPerformance.total_trips
+        );
+        const newTotalTrips = prevPerformance.total_trips + 1;
+        const newOnTimeCount = prevOnTimeCount + (isOnTime ? 1 : 0);
+        const newOnTimePercentage = (newOnTimeCount / newTotalTrips) * 100;
+
+        const newTrip = {
+          date: new Date().toISOString().split('T')[0],
+          route: `${job.origin} -> ${job.destination}`,
+          amount: paymentPence,
+        };
 
         transaction.update(loadRef, {
           active_loads_status: 'delivered',
           deliveredAt: serverTimestamp(),
         });
         transaction.delete(activeJobRef);
+        transaction.set(
+          profileRef,
+          {
+            earnings: {
+              today: prevEarnings.today + paymentPence,
+              week: prevEarnings.week + paymentPence,
+              month: prevEarnings.month + paymentPence,
+            },
+            performance: {
+              total_trips: newTotalTrips,
+              total_miles: prevPerformance.total_miles + distanceMiles,
+              on_time_delivery_percentage: newOnTimePercentage,
+            },
+            recent_trips: [newTrip, ...prevTrips].slice(0, 10),
+          },
+          { merge: true }
+        );
       });
 
       setActiveJobs([]);
