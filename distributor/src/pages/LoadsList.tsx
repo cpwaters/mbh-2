@@ -16,19 +16,17 @@ interface Load {
   pickupTime: string;
   deliveryDate: string;
   deliveryTime: string;
-  status: 'open' | 'accepted' | 'collected' | 'in_transit' | 'delivered' | 'closed' | 'cancelled' | 'paid';
+  status: 'available' | 'accepted' | 'collected' | 'in_transit' | 'delivered' | 'closed';
   createdBy: string;
 }
 
 const statusColors = {
-  open: 'bg-green-100 text-green-800',
+  available: 'bg-green-100 text-green-800',
   accepted: 'bg-blue-100 text-blue-800',
   collected: 'bg-purple-100 text-purple-800',
   in_transit: 'bg-yellow-100 text-yellow-800',
   delivered: 'bg-indigo-100 text-indigo-800',
   closed: 'bg-gray-100 text-gray-800',
-  cancelled: 'bg-red-100 text-red-800',
-  paid: 'bg-emerald-100 text-emerald-800',
 };
 
 export default function LoadsList() {
@@ -64,7 +62,7 @@ export default function LoadsList() {
             pickupTime: data.pickup_date?.time || '',
             deliveryDate: data.delivery_date?.date || '',
             deliveryTime: data.delivery_date?.time || '',
-            status: data.active_loads_status || 'open',
+            status: data.active_loads_status || 'available',
             createdBy: data.createdBy || ''
           } as Load;
         });
@@ -124,9 +122,9 @@ export default function LoadsList() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Open</p>
+              <p className="text-sm text-gray-600">Available</p>
               <p className="text-2xl font-bold text-green-600">
-                {loads.filter(l => l.status === 'open').length}
+                {loads.filter(l => l.status === 'available').length}
               </p>
             </div>
             <div className="bg-green-100 p-3 rounded-lg">

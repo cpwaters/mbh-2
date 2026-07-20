@@ -13,7 +13,7 @@
     },
     "active_loads_status": {
         "type": "string",
-        "enum": ["open", "accepted", "collected", "in_transit", "delivered", "closed", "cancelled", "paid"]
+        "enum": ["available", "accepted", "collected", "in_transit", "delivered", "closed"]
     },
     "progress" : {
         "type": "number",

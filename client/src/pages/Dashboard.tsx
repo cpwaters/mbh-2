@@ -30,12 +30,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchLoads = async () => {
       try {
-        // Only show loads still open for acceptance -- once a load is
-        // accepted/collected/in_transit/delivered/etc it's no longer
-        // "available" to a driver (it still shows in the distributor's
-        // own loads list regardless of status).
-        const openLoadsQuery = query(collection(db, 'loads'), where('active_loads_status', '==', 'open'));
-        const loadsSnapshot = await getDocs(openLoadsQuery);
+        // Only show loads still available for acceptance -- once a load is
+        // accepted/collected/in_transit/delivered/closed it's no longer
+        // available to a driver (it still shows in the distributor's own
+        // loads list regardless of status).
+        const availableLoadsQuery = query(collection(db, 'loads'), where('active_loads_status', '==', 'available'));
+        const loadsSnapshot = await getDocs(availableLoadsQuery);
 
         const loadsData = loadsSnapshot.docs.map(doc => {
           const data = doc.data();
@@ -93,7 +93,7 @@ export default function Dashboard() {
         if (activeJobSnap.exists()) {
           throw new Error('You already have a job in progress. Complete it before accepting another.');
         }
-        if (!loadSnap.exists() || loadSnap.data().active_loads_status !== 'open') {
+        if (!loadSnap.exists() || loadSnap.data().active_loads_status !== 'available') {
           throw new Error('This load has already been accepted by another driver.');
         }
 

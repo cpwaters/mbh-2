@@ -235,7 +235,7 @@ export default function CreateLoad() {
           invoiced: formData.invoiced,
           instant_payment: formData.instant_payment,
         },
-        active_loads_status: 'open',
+        active_loads_status: 'available',
         createdBy: currentUser.uid,
         createdAt: new Date().toISOString(),
       };

@@ -26,9 +26,9 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated()
                             && resource.data.createdBy == request.auth.uid;
 
-      // A driver may accept an open load: only status + acceptedBy/acceptedAt may change
+      // A driver may accept an available load: only status + acceptedBy/acceptedAt may change
       allow update: if isAuthenticated()
-                    && resource.data.active_loads_status == 'open'
+                    && resource.data.active_loads_status == 'available'
                     && request.resource.data.active_loads_status == 'accepted'
                     && request.resource.data.acceptedBy == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys()
