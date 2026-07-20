@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
 import { getDrivingRoute } from '../lib/routing';
+import { getWhat3Words } from '../lib/w3w';
 
 interface ActiveJob {
   origin: string;
@@ -35,6 +36,8 @@ export default function MapView() {
   const [originPin, setOriginPin] = useState<GeoPoint | null>(null);
   const [destinationPin, setDestinationPin] = useState<GeoPoint | null>(null);
   const [routeGeometry, setRouteGeometry] = useState<GeoPoint[] | null>(null);
+  const [originW3W, setOriginW3W] = useState<string | null>(null);
+  const [destinationW3W, setDestinationW3W] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastWriteRef = useRef(0);
 
@@ -139,6 +142,23 @@ export default function MapView() {
       cancelled = true;
     };
   }, [originPin, destinationPin]);
+
+  // What3Words addresses for the origin/destination, once geocoded.
+  useEffect(() => {
+    if (!originPin) {
+      Promise.resolve().then(() => setOriginW3W(null));
+    } else {
+      getWhat3Words(originPin.lat, originPin.lng).then(setOriginW3W);
+    }
+  }, [originPin]);
+
+  useEffect(() => {
+    if (!destinationPin) {
+      Promise.resolve().then(() => setDestinationW3W(null));
+    } else {
+      getWhat3Words(destinationPin.lat, destinationPin.lng).then(setDestinationW3W);
+    }
+  }, [destinationPin]);
 
   const handleToggleNavigation = () => {
     if (!currentUser) return;
@@ -298,6 +318,7 @@ export default function MapView() {
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">Origin</div>
                     <div className="text-sm text-gray-500">{activeJob.origin}</div>
+                    {originW3W && <div className="text-xs text-blue-600 font-mono mt-0.5">///{originW3W}</div>}
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -307,6 +328,7 @@ export default function MapView() {
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">Destination</div>
                     <div className="text-sm text-gray-500">{activeJob.destination}</div>
+                    {destinationW3W && <div className="text-xs text-blue-600 font-mono mt-0.5">///{destinationW3W}</div>}
                   </div>
                 </div>
               </div>

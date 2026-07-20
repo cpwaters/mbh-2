@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
 import { getDrivingRoute } from '../lib/routing';
+import { getWhat3Words } from '../lib/w3w';
 
 const TRACKABLE_STATUSES = ['accepted', 'collected', 'in_transit'];
 
@@ -46,6 +47,8 @@ export default function LoadsList() {
   const [trackedOriginPin, setTrackedOriginPin] = useState<GeoPoint | null>(null);
   const [trackedDestinationPin, setTrackedDestinationPin] = useState<GeoPoint | null>(null);
   const [trackedRouteGeometry, setTrackedRouteGeometry] = useState<GeoPoint[] | null>(null);
+  const [trackedOriginW3W, setTrackedOriginW3W] = useState<string | null>(null);
+  const [trackedDestinationW3W, setTrackedDestinationW3W] = useState<string | null>(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -161,6 +164,23 @@ export default function LoadsList() {
       cancelled = true;
     };
   }, [trackedOriginPin, trackedDestinationPin]);
+
+  // What3Words addresses for the tracked load's origin/destination.
+  useEffect(() => {
+    if (!trackedOriginPin) {
+      Promise.resolve().then(() => setTrackedOriginW3W(null));
+    } else {
+      getWhat3Words(trackedOriginPin.lat, trackedOriginPin.lng).then(setTrackedOriginW3W);
+    }
+  }, [trackedOriginPin]);
+
+  useEffect(() => {
+    if (!trackedDestinationPin) {
+      Promise.resolve().then(() => setTrackedDestinationW3W(null));
+    } else {
+      getWhat3Words(trackedDestinationPin.lat, trackedDestinationPin.lng).then(setTrackedDestinationW3W);
+    }
+  }, [trackedDestinationPin]);
 
   const handleToggleTracking = (loadId: string) => {
     setTrackedLoadId((prev) => (prev === loadId ? null : loadId));
@@ -371,6 +391,13 @@ export default function LoadsList() {
                   <Navigation className="w-4 h-4" />
                   {trackedLoadId === load.id ? 'Hide Live Location' : 'Track Live Location'}
                 </button>
+
+                {trackedLoadId === load.id && (trackedOriginW3W || trackedDestinationW3W) && (
+                  <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs font-mono text-blue-600">
+                    {trackedOriginW3W && <span>Origin: ///{trackedOriginW3W}</span>}
+                    {trackedDestinationW3W && <span>Destination: ///{trackedDestinationW3W}</span>}
+                  </div>
+                )}
 
                 {trackedLoadId === load.id && (
                   <div className="mt-3 h-72 rounded-lg overflow-hidden border border-gray-200">
