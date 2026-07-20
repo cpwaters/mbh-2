@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Package, MapPin, Weight, Box, Calendar, Clock, Trash2 } from 'lucide-react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Package, MapPin, Weight, Box, Calendar, Clock, XCircle } from 'lucide-react';
+import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,7 +16,7 @@ interface Load {
   pickupTime: string;
   deliveryDate: string;
   deliveryTime: string;
-  status: 'available' | 'accepted' | 'collected' | 'in_transit' | 'delivered' | 'closed';
+  status: 'available' | 'accepted' | 'collected' | 'in_transit' | 'delivered' | 'closed' | 'paid' | 'cancelled';
   createdBy: string;
 }
 
@@ -27,12 +27,15 @@ const statusColors = {
   in_transit: 'bg-yellow-100 text-yellow-800',
   delivered: 'bg-indigo-100 text-indigo-800',
   closed: 'bg-gray-100 text-gray-800',
+  paid: 'bg-emerald-100 text-emerald-800',
+  cancelled: 'bg-red-100 text-red-800',
 };
 
 export default function LoadsList() {
   const [loads, setLoads] = useState<Load[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -81,10 +84,25 @@ export default function LoadsList() {
     fetchLoads();
   }, [currentUser]);
 
-  const handleDelete = (id: string) => {
-    // In production, this would call backend API
-    console.log('Delete load:', id);
-    alert('Delete functionality would be implemented here');
+  const handleCancel = async (load: Load) => {
+    if (load.status !== 'available') return;
+    setCancellingId(load.id);
+    setError(null);
+
+    try {
+      await updateDoc(doc(db, 'loads', load.id), {
+        active_loads_status: 'cancelled',
+        cancelledAt: serverTimestamp(),
+      });
+      setLoads((prev) =>
+        prev.map((l) => (l.id === load.id ? { ...l, status: 'cancelled' } : l))
+      );
+    } catch (err) {
+      console.error('Error cancelling load:', err);
+      setError(err instanceof Error ? err.message : 'Failed to cancel load.');
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   if (loading) {
@@ -213,11 +231,12 @@ export default function LoadsList() {
                   <div className="text-sm text-gray-500">Payment</div>
                 </div>
                 <button
-                  onClick={() => handleDelete(load.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete load"
+                  onClick={() => handleCancel(load)}
+                  disabled={load.status !== 'available' || cancellingId === load.id}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                  title={load.status === 'available' ? 'Cancel load' : 'Only available loads can be cancelled'}
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <XCircle className="w-5 h-5" />
                 </button>
               </div>
             </div>
