@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Navigation, MapPin, Truck } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import { Navigation, MapPin, Package, Truck } from 'lucide-react';
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -11,18 +11,23 @@ interface ActiveJob {
   progress: number;
 }
 
+interface JobPin {
+  id: string;
+  origin: string;
+  destination: string;
+  status: string;
+  payment: number;
+}
+
 export default function MapView() {
   const { currentUser } = useAuth();
   const [activeJob, setActiveJob] = useState<ActiveJob | null>(null);
+  const [allJobs, setAllJobs] = useState<JobPin[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchActiveJob = async () => {
-      if (!currentUser) {
-        setLoading(false);
-        return;
-      }
-
+      if (!currentUser) return;
       try {
         const jobDoc = await getDoc(doc(db, 'activeJobs', currentUser.uid));
         if (jobDoc.exists()) {
@@ -30,12 +35,29 @@ export default function MapView() {
         }
       } catch (error) {
         console.error('Error fetching active job:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchActiveJob();
+    const fetchAllJobs = async () => {
+      try {
+        const loadsSnapshot = await getDocs(collection(db, 'loads'));
+        const jobsData = loadsSnapshot.docs.map((loadDoc) => {
+          const data = loadDoc.data();
+          return {
+            id: loadDoc.id,
+            origin: `${data.source_company_address?.city || ''}, ${data.source_company_address?.postcode || ''}`,
+            destination: `${data.destination_company_address?.city || ''}, ${data.destination_company_address?.postcode || ''}`,
+            status: data.active_loads_status || '',
+            payment: data.payment_amount || 0,
+          } as JobPin;
+        });
+        setAllJobs(jobsData);
+      } catch (error) {
+        console.error('Error fetching all jobs:', error);
+      }
+    };
+
+    Promise.all([fetchActiveJob(), fetchAllJobs()]).finally(() => setLoading(false));
   }, [currentUser]);
 
   if (loading) {
@@ -162,6 +184,40 @@ export default function MapView() {
           </div>
         </div>
       )}
+
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">All Jobs</h2>
+        {allJobs.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-600">
+            No jobs found.
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {allJobs.map((job) => (
+              <div
+                key={job.id}
+                className="bg-white rounded-lg shadow-md p-4 border border-gray-200 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-100 p-2 rounded-lg">
+                    <Package className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="font-medium text-gray-900">{job.origin}</span>
+                      <span className="text-gray-400">→</span>
+                      <span className="font-medium text-gray-900">{job.destination}</span>
+                    </div>
+                    <div className="text-sm text-gray-500 capitalize mt-0.5">{job.status.replace(/_/g, ' ')}</div>
+                  </div>
+                </div>
+                <div className="text-lg font-bold text-green-600">£{job.payment.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

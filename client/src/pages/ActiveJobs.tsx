@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle, Clock, MapPin, Navigation } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +31,7 @@ const getStatusInfo = (status: string) => {
 
 export default function ActiveJobs() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [activeJobs, setActiveJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [completingJobId, setCompletingJobId] = useState<string | null>(null);
@@ -184,7 +186,10 @@ export default function ActiveJobs() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                  <button
+                    onClick={() => navigate('/map')}
+                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  >
                     View Route
                   </button>
                   <button className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
