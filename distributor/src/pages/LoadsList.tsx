@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
+import { getDrivingRoute } from '../lib/routing';
 
 const TRACKABLE_STATUSES = ['accepted', 'collected', 'in_transit'];
 
@@ -44,6 +45,7 @@ export default function LoadsList() {
   const [trackedLocation, setTrackedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [trackedOriginPin, setTrackedOriginPin] = useState<GeoPoint | null>(null);
   const [trackedDestinationPin, setTrackedDestinationPin] = useState<GeoPoint | null>(null);
+  const [trackedRouteGeometry, setTrackedRouteGeometry] = useState<GeoPoint[] | null>(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -141,6 +143,24 @@ export default function LoadsList() {
       cancelled = true;
     };
   }, [trackedLoadId, loads]);
+
+  // Fetch an actual road-following route once both endpoints are geocoded.
+  // Falls back to a straight line (handled in LiveLocationMap) if this fails.
+  useEffect(() => {
+    if (!trackedOriginPin || !trackedDestinationPin) {
+      Promise.resolve().then(() => setTrackedRouteGeometry(null));
+      return;
+    }
+
+    let cancelled = false;
+    getDrivingRoute(trackedOriginPin, trackedDestinationPin).then((route) => {
+      if (!cancelled) setTrackedRouteGeometry(route);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trackedOriginPin, trackedDestinationPin]);
 
   const handleToggleTracking = (loadId: string) => {
     setTrackedLoadId((prev) => (prev === loadId ? null : loadId));
@@ -363,6 +383,7 @@ export default function LoadsList() {
                         currentLocation={
                           trackedLocation ? { ...trackedLocation, label: 'Driver location' } : undefined
                         }
+                        routeGeometry={trackedRouteGeometry ?? undefined}
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center bg-gray-50 text-gray-500 text-sm">

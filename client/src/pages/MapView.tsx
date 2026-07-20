@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import LiveLocationMap from '../components/LiveLocationMap';
 import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
+import { getDrivingRoute } from '../lib/routing';
 
 interface ActiveJob {
   origin: string;
@@ -33,6 +34,7 @@ export default function MapView() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [originPin, setOriginPin] = useState<GeoPoint | null>(null);
   const [destinationPin, setDestinationPin] = useState<GeoPoint | null>(null);
+  const [routeGeometry, setRouteGeometry] = useState<GeoPoint[] | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastWriteRef = useRef(0);
 
@@ -118,6 +120,25 @@ export default function MapView() {
     // object, so this doesn't re-geocode on every live GPS position update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeJob?.origin, activeJob?.destination]);
+
+  // Fetch an actual road-following route once both endpoints are geocoded.
+  // Falls back to a straight line (handled in LiveLocationMap) if this fails
+  // -- it's a free public demo server with no uptime/rate-limit guarantees.
+  useEffect(() => {
+    if (!originPin || !destinationPin) {
+      Promise.resolve().then(() => setRouteGeometry(null));
+      return;
+    }
+
+    let cancelled = false;
+    getDrivingRoute(originPin, destinationPin).then((route) => {
+      if (!cancelled) setRouteGeometry(route);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [originPin, destinationPin]);
 
   const handleToggleNavigation = () => {
     if (!currentUser) return;
@@ -205,6 +226,7 @@ export default function MapView() {
                     currentLocation={
                       activeJob.currentLocation ? { ...activeJob.currentLocation, label: 'Current location' } : undefined
                     }
+                    routeGeometry={routeGeometry ?? undefined}
                   />
                 ) : (
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 h-full flex items-center justify-center">

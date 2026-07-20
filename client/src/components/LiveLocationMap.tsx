@@ -58,10 +58,16 @@ interface LiveLocationMapProps {
   currentLocation?: Pin;
   origin?: Pin;
   destination?: Pin;
+  /** Actual road-following route geometry (e.g. from OSRM). Falls back to a
+   *  straight dashed line between origin/destination when not provided. */
+  routeGeometry?: Pin[];
 }
 
-export default function LiveLocationMap({ currentLocation, origin, destination }: LiveLocationMapProps) {
-  const points = [origin, destination, currentLocation].filter((p): p is Pin => !!p);
+export default function LiveLocationMap({ currentLocation, origin, destination, routeGeometry }: LiveLocationMapProps) {
+  const hasRoute = routeGeometry && routeGeometry.length > 1;
+  const points = hasRoute
+    ? [...routeGeometry, currentLocation].filter((p): p is Pin => !!p)
+    : [origin, destination, currentLocation].filter((p): p is Pin => !!p);
   const center = points[0] ?? { lat: 51.5074, lng: -0.1278 };
 
   return (
@@ -76,14 +82,22 @@ export default function LiveLocationMap({ currentLocation, origin, destination }
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {origin && destination && (
+      {hasRoute ? (
         <Polyline
-          positions={[
-            [origin.lat, origin.lng],
-            [destination.lat, destination.lng],
-          ]}
-          pathOptions={{ color: '#2563eb', weight: 3, dashArray: '8 8' }}
+          positions={routeGeometry.map((p) => [p.lat, p.lng])}
+          pathOptions={{ color: '#2563eb', weight: 4 }}
         />
+      ) : (
+        origin &&
+        destination && (
+          <Polyline
+            positions={[
+              [origin.lat, origin.lng],
+              [destination.lat, destination.lng],
+            ]}
+            pathOptions={{ color: '#2563eb', weight: 3, dashArray: '8 8' }}
+          />
+        )
       )}
 
       {origin && (
