@@ -71,6 +71,12 @@ export default function ActiveJobs() {
   const handleComplete = async (job: Job) => {
     if (!currentUser) return;
     setErrorMessage(null);
+
+    if (!job.loadId) {
+      setErrorMessage('This job is missing its load reference and cannot be completed automatically. Please contact support.');
+      return;
+    }
+
     setCompletingJobId(job.id);
 
     try {
