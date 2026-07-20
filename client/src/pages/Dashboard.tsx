@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Package, MapPin, Weight, Box, AlertCircle } from 'lucide-react';
-import { collection, doc, getDoc, getDocs, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, runTransaction, serverTimestamp, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,7 +16,6 @@ interface Load {
   pickupTime: string;
   deliveryDate: string;
   deliveryTime: string;
-  status: string;
 }
 
 export default function Dashboard() {
@@ -31,8 +30,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchLoads = async () => {
       try {
-        const loadsCollection = collection(db, 'loads');
-        const loadsSnapshot = await getDocs(loadsCollection);
+        // Only show loads still open for acceptance -- once a load is
+        // accepted/collected/in_transit/delivered/etc it's no longer
+        // "available" to a driver (it still shows in the distributor's
+        // own loads list regardless of status).
+        const openLoadsQuery = query(collection(db, 'loads'), where('active_loads_status', '==', 'open'));
+        const loadsSnapshot = await getDocs(openLoadsQuery);
 
         const loadsData = loadsSnapshot.docs.map(doc => {
           const data = doc.data();
@@ -48,7 +51,6 @@ export default function Dashboard() {
             pickupTime: data.pickup_date?.time || '',
             deliveryDate: data.delivery_date?.date || '',
             deliveryTime: data.delivery_date?.time || '',
-            status: data.active_loads_status || ''
           } as Load;
         });
         setLoads(loadsData);
@@ -114,9 +116,7 @@ export default function Dashboard() {
       });
 
       setHasActiveJob(true);
-      setLoads((prev) =>
-        prev.map((l) => (l.id === load.id ? { ...l, status: 'accepted' } : l))
-      );
+      setLoads((prev) => prev.filter((l) => l.id !== load.id));
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to accept load.');
     } finally {
@@ -232,19 +232,13 @@ export default function Dashboard() {
             )}
 
             <div className="flex gap-3">
-              {load.status === 'open' ? (
-                <button
-                  onClick={() => handleAccept(load)}
-                  disabled={hasActiveJob || acceptingLoadId === load.id}
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
-                >
-                  {acceptingLoadId === load.id ? 'Accepting...' : 'Accept Load'}
-                </button>
-              ) : (
-                <div className="flex-1 bg-gray-100 text-gray-500 px-4 py-2 rounded-lg font-medium text-center capitalize">
-                  {load.status.replace(/_/g, ' ')}
-                </div>
-              )}
+              <button
+                onClick={() => handleAccept(load)}
+                disabled={hasActiveJob || acceptingLoadId === load.id}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+              >
+                {acceptingLoadId === load.id ? 'Accepting...' : 'Accept Load'}
+              </button>
               <button
                 onClick={() => setExpandedLoadId(expandedLoadId === load.id ? null : load.id)}
                 className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
