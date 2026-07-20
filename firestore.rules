@@ -15,9 +15,8 @@ service cloud.firestore {
 
     // Loads collection rules
     match /loads/{loadId} {
-      // Only the creator can read their own loads
-      allow read: if isAuthenticated()
-                  && resource.data.createdBy == request.auth.uid;
+      // Any authenticated user can read loads (drivers browse all available loads)
+      allow read: if isAuthenticated();
 
       // Only authenticated users can create loads, and must set their userId as createdBy
       allow create: if isAuthenticated()

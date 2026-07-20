@@ -18,6 +18,7 @@ lib/**/*.js.map
 *serviceAccount*.json
 *service-account*.json
 firebase-adminsdk*.json
+mybackhaul-21112-*.json
 *.pem
 *.p12
 *.key

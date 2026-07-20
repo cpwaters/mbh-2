@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Package, MapPin, Weight, Box } from 'lucide-react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 interface Load {
@@ -21,14 +21,13 @@ interface Load {
 export default function Dashboard() {
   const [loads, setLoads] = useState<Load[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedLoadId, setExpandedLoadId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLoads = async () => {
       try {
         const loadsCollection = collection(db, 'loads');
-        // Only show loads with 'open' status (available for drivers to accept)
-        const loadsQuery = query(loadsCollection, where('active_loads_status', '==', 'open'));
-        const loadsSnapshot = await getDocs(loadsQuery);
+        const loadsSnapshot = await getDocs(loadsCollection);
 
         const loadsData = loadsSnapshot.docs.map(doc => {
           const data = doc.data();
@@ -107,9 +106,6 @@ export default function Dashboard() {
                     <span className="text-gray-400">→</span>
                     <span className="font-semibold">{load.destination}</span>
                   </div>
-                  <div className="mt-2 text-sm text-gray-500">
-                    {load.distance} miles
-                  </div>
                 </div>
               </div>
               <div className="text-right">
@@ -118,39 +114,48 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Weight className="w-4 h-4 text-gray-500" />
+            {expandedLoadId === load.id && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 pt-4 border-t border-gray-100">
                 <div>
-                  <div className="text-xs text-gray-500">Weight</div>
-                  <div className="font-medium text-gray-900">{load.weight} kg</div>
+                  <div className="text-xs text-gray-500">Distance</div>
+                  <div className="font-medium text-gray-900">{load.distance} miles</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Weight className="w-4 h-4 text-gray-500" />
+                  <div>
+                    <div className="text-xs text-gray-500">Weight</div>
+                    <div className="font-medium text-gray-900">{load.weight} kg</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Box className="w-4 h-4 text-gray-500" />
+                  <div>
+                    <div className="text-xs text-gray-500">Pallets</div>
+                    <div className="font-medium text-gray-900">{load.pallets}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Pickup</div>
+                  <div className="font-medium text-gray-900">{load.pickupDate}</div>
+                  <div className="text-xs text-gray-600 mt-0.5">{load.pickupTime}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Delivery</div>
+                  <div className="font-medium text-gray-900">{load.deliveryDate}</div>
+                  <div className="text-xs text-gray-600 mt-0.5">{load.deliveryTime}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Box className="w-4 h-4 text-gray-500" />
-                <div>
-                  <div className="text-xs text-gray-500">Pallets</div>
-                  <div className="font-medium text-gray-900">{load.pallets}</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Pickup</div>
-                <div className="font-medium text-gray-900">{load.pickupDate}</div>
-                <div className="text-xs text-gray-600 mt-0.5">{load.pickupTime}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Delivery</div>
-                <div className="font-medium text-gray-900">{load.deliveryDate}</div>
-                <div className="text-xs text-gray-600 mt-0.5">{load.deliveryTime}</div>
-              </div>
-            </div>
+            )}
 
             <div className="flex gap-3">
               <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
                 Accept Load
               </button>
-              <button className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                View Details
+              <button
+                onClick={() => setExpandedLoadId(expandedLoadId === load.id ? null : load.id)}
+                className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                {expandedLoadId === load.id ? 'Hide Details' : 'View Details'}
               </button>
             </div>
           </div>
