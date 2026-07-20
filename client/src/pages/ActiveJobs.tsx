@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Clock, MapPin, Navigation } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import { AlertCircle, CheckCircle, Clock, MapPin, Navigation } from 'lucide-react';
+import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Job {
   id: string;
+  loadId: string;
   origin: string;
   destination: string;
   status: 'in_transit' | 'loading' | 'unloading';
@@ -31,6 +32,8 @@ export default function ActiveJobs() {
   const { currentUser } = useAuth();
   const [activeJobs, setActiveJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [completingJobId, setCompletingJobId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchActiveJobs = async () => {
@@ -63,6 +66,31 @@ export default function ActiveJobs() {
     fetchActiveJobs();
   }, [currentUser]);
 
+  const handleComplete = async (job: Job) => {
+    if (!currentUser) return;
+    setErrorMessage(null);
+    setCompletingJobId(job.id);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const activeJobRef = doc(db, 'activeJobs', currentUser.uid);
+        const loadRef = doc(db, 'loads', job.loadId);
+
+        transaction.update(loadRef, {
+          active_loads_status: 'delivered',
+          deliveredAt: serverTimestamp(),
+        });
+        transaction.delete(activeJobRef);
+      });
+
+      setActiveJobs([]);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to complete job.');
+    } finally {
+      setCompletingJobId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
@@ -83,6 +111,13 @@ export default function ActiveJobs() {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Active Jobs</h1>
         <p className="text-gray-600">Track your current deliveries</p>
       </div>
+
+      {errorMessage && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-red-800">{errorMessage}</p>
+        </div>
+      )}
 
       {activeJobs.length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
@@ -154,6 +189,13 @@ export default function ActiveJobs() {
                   </button>
                   <button className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                     Contact Support
+                  </button>
+                  <button
+                    onClick={() => handleComplete(job)}
+                    disabled={completingJobId === job.id}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {completingJobId === job.id ? 'Completing...' : 'Mark Delivered'}
                   </button>
                 </div>
               </div>

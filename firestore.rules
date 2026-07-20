@@ -22,13 +22,29 @@ service cloud.firestore {
       allow create: if isAuthenticated()
                     && request.resource.data.createdBy == request.auth.uid;
 
-      // Only the creator can update or delete their own loads
+      // The creator can update or delete their own loads
       allow update, delete: if isAuthenticated()
                             && resource.data.createdBy == request.auth.uid;
+
+      // A driver may accept an open load: only status + acceptedBy/acceptedAt may change
+      allow update: if isAuthenticated()
+                    && resource.data.active_loads_status == 'open'
+                    && request.resource.data.active_loads_status == 'accepted'
+                    && request.resource.data.acceptedBy == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['active_loads_status', 'acceptedBy', 'acceptedAt']);
+
+      // The accepting driver may mark their own in-progress load delivered
+      allow update: if isAuthenticated()
+                    && resource.data.acceptedBy == request.auth.uid
+                    && resource.data.active_loads_status in ['accepted', 'collected', 'in_transit']
+                    && request.resource.data.active_loads_status == 'delivered'
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['active_loads_status', 'deliveredAt']);
     }
 
     // Active jobs collection rules
-    // Document ID must be the user's UID to enforce one active job per driver
+    // Document ID must be the user's UID to enforce one active/accepted job per driver
     match /activeJobs/{userId} {
       // Only the driver can read their own active job
       allow read: if isOwner(userId);
@@ -37,11 +53,15 @@ service cloud.firestore {
       allow create: if isOwner(userId)
                     && request.resource.data.userId == request.auth.uid;
 
-      // Only the driver can update their own active job
+      // Only the driver can update their own active job, and only to update progress/status —
+      // not to silently swap which load it points to (that requires delete + create, i.e.
+      // completing the current job first)
       allow update: if isOwner(userId)
-                    && resource.data.userId == request.auth.uid;
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.loadId == resource.data.loadId;
 
-      // Only the driver can delete their own active job
+      // Only the driver can delete their own active job (done as part of completing a job)
       allow delete: if isOwner(userId);
     }
 
