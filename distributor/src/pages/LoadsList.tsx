@@ -4,6 +4,7 @@ import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import LiveLocationMap from '../components/LiveLocationMap';
+import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
 
 const TRACKABLE_STATUSES = ['accepted', 'collected', 'in_transit'];
 
@@ -41,6 +42,8 @@ export default function LoadsList() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [trackedLoadId, setTrackedLoadId] = useState<string | null>(null);
   const [trackedLocation, setTrackedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [trackedOriginPin, setTrackedOriginPin] = useState<GeoPoint | null>(null);
+  const [trackedDestinationPin, setTrackedDestinationPin] = useState<GeoPoint | null>(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -110,6 +113,34 @@ export default function LoadsList() {
 
     return () => unsubscribe();
   }, [trackedLoadId, currentUser]);
+
+  // Geocode the tracked load's origin/destination postcodes to plot them
+  useEffect(() => {
+    if (!trackedLoadId) {
+      Promise.resolve().then(() => {
+        setTrackedOriginPin(null);
+        setTrackedDestinationPin(null);
+      });
+      return;
+    }
+
+    const load = loads.find((l) => l.id === trackedLoadId);
+    if (!load) return;
+
+    let cancelled = false;
+    Promise.all([
+      geocodePostcode(extractPostcode(load.origin)),
+      geocodePostcode(extractPostcode(load.destination)),
+    ]).then(([originResult, destinationResult]) => {
+      if (cancelled) return;
+      setTrackedOriginPin(originResult);
+      setTrackedDestinationPin(destinationResult);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trackedLoadId, loads]);
 
   const handleToggleTracking = (loadId: string) => {
     setTrackedLoadId((prev) => (prev === loadId ? null : loadId));
@@ -323,15 +354,19 @@ export default function LoadsList() {
 
                 {trackedLoadId === load.id && (
                   <div className="mt-3 h-72 rounded-lg overflow-hidden border border-gray-200">
-                    {trackedLocation ? (
+                    {trackedOriginPin || trackedDestinationPin || trackedLocation ? (
                       <LiveLocationMap
-                        lat={trackedLocation.lat}
-                        lng={trackedLocation.lng}
-                        label={`${load.origin} → ${load.destination}`}
+                        origin={trackedOriginPin ? { ...trackedOriginPin, label: load.origin } : undefined}
+                        destination={
+                          trackedDestinationPin ? { ...trackedDestinationPin, label: load.destination } : undefined
+                        }
+                        currentLocation={
+                          trackedLocation ? { ...trackedLocation, label: 'Driver location' } : undefined
+                        }
                       />
                     ) : (
                       <div className="h-full flex items-center justify-center bg-gray-50 text-gray-500 text-sm">
-                        Waiting for the driver's live location...
+                        Loading route...
                       </div>
                     )}
                   </div>

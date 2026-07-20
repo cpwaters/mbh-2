@@ -4,6 +4,7 @@ import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc } from
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import LiveLocationMap from '../components/LiveLocationMap';
+import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
 
 interface ActiveJob {
   origin: string;
@@ -30,6 +31,8 @@ export default function MapView() {
   const [loading, setLoading] = useState(true);
   const [isTracking, setIsTracking] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [originPin, setOriginPin] = useState<GeoPoint | null>(null);
+  const [destinationPin, setDestinationPin] = useState<GeoPoint | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastWriteRef = useRef(0);
 
@@ -85,6 +88,36 @@ export default function MapView() {
       }
     };
   }, []);
+
+  // Geocode origin/destination postcodes to plot them on the map. Keyed on the
+  // origin/destination strings specifically (not the whole activeJob object)
+  // so this doesn't re-run every time the live GPS position updates.
+  useEffect(() => {
+    if (!activeJob) {
+      Promise.resolve().then(() => {
+        setOriginPin(null);
+        setDestinationPin(null);
+      });
+      return;
+    }
+
+    let cancelled = false;
+    Promise.all([
+      geocodePostcode(extractPostcode(activeJob.origin)),
+      geocodePostcode(extractPostcode(activeJob.destination)),
+    ]).then(([originResult, destinationResult]) => {
+      if (cancelled) return;
+      setOriginPin(originResult);
+      setDestinationPin(destinationResult);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally keyed on the postcode strings, not the whole activeJob
+    // object, so this doesn't re-geocode on every live GPS position update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeJob?.origin, activeJob?.destination]);
 
   const handleToggleNavigation = () => {
     if (!currentUser) return;
@@ -165,18 +198,19 @@ export default function MapView() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
               <div className="h-[600px] relative">
-                {activeJob.currentLocation ? (
+                {originPin || destinationPin || activeJob.currentLocation ? (
                   <LiveLocationMap
-                    lat={activeJob.currentLocation.lat}
-                    lng={activeJob.currentLocation.lng}
-                    label={`${activeJob.origin} → ${activeJob.destination}`}
+                    origin={originPin ? { ...originPin, label: activeJob.origin } : undefined}
+                    destination={destinationPin ? { ...destinationPin, label: activeJob.destination } : undefined}
+                    currentLocation={
+                      activeJob.currentLocation ? { ...activeJob.currentLocation, label: 'Current location' } : undefined
+                    }
                   />
                 ) : (
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 h-full flex items-center justify-center">
                     <div className="text-center">
                       <MapPin className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                      <p className="text-gray-600 font-medium">Waiting for live location</p>
-                      <p className="text-sm text-gray-500 mt-2">Start navigation to begin sharing your position</p>
+                      <p className="text-gray-600 font-medium">Loading route...</p>
                     </div>
                   </div>
                 )}
