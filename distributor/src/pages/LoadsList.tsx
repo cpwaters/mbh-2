@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Package, MapPin, Weight, Box, Calendar, Clock, XCircle } from 'lucide-react';
-import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
+import { Package, MapPin, Weight, Box, Calendar, Clock, Navigation, XCircle } from 'lucide-react';
+import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import LiveLocationMap from '../components/LiveLocationMap';
+
+const TRACKABLE_STATUSES = ['accepted', 'collected', 'in_transit'];
 
 interface Load {
   id: string;
@@ -36,6 +39,8 @@ export default function LoadsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [trackedLoadId, setTrackedLoadId] = useState<string | null>(null);
+  const [trackedLocation, setTrackedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -83,6 +88,32 @@ export default function LoadsList() {
 
     fetchLoads();
   }, [currentUser]);
+
+  // Live-subscribe to whichever load's tracking panel is currently expanded
+  useEffect(() => {
+    if (!trackedLoadId || !currentUser) {
+      setTrackedLocation(null);
+      return;
+    }
+
+    setTrackedLocation(null);
+    const trackingQuery = query(
+      collection(db, 'activeJobs'),
+      where('loadId', '==', trackedLoadId),
+      where('createdBy', '==', currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(trackingQuery, (snapshot) => {
+      const jobDoc = snapshot.docs[0];
+      setTrackedLocation(jobDoc?.data().currentLocation || null);
+    });
+
+    return () => unsubscribe();
+  }, [trackedLoadId, currentUser]);
+
+  const handleToggleTracking = (loadId: string) => {
+    setTrackedLoadId((prev) => (prev === loadId ? null : loadId));
+  };
 
   const handleCancel = async (load: Load) => {
     if (load.status !== 'available') return;
@@ -279,6 +310,34 @@ export default function LoadsList() {
                 </div>
               </div>
             </div>
+
+            {TRACKABLE_STATUSES.includes(load.status) && (
+              <>
+                <button
+                  onClick={() => handleToggleTracking(load.id)}
+                  className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  <Navigation className="w-4 h-4" />
+                  {trackedLoadId === load.id ? 'Hide Live Location' : 'Track Live Location'}
+                </button>
+
+                {trackedLoadId === load.id && (
+                  <div className="mt-3 h-72 rounded-lg overflow-hidden border border-gray-200">
+                    {trackedLocation ? (
+                      <LiveLocationMap
+                        lat={trackedLocation.lat}
+                        lng={trackedLocation.lng}
+                        label={`${load.origin} → ${load.destination}`}
+                      />
+                    ) : (
+                      <div className="h-full flex items-center justify-center bg-gray-50 text-gray-500 text-sm">
+                        Waiting for the driver's live location...
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>

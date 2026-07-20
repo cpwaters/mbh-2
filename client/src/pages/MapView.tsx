@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Navigation, MapPin, Package, Truck } from 'lucide-react';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, Navigation, MapPin, Package } from 'lucide-react';
+import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import LiveLocationMap from '../components/LiveLocationMap';
 
 interface ActiveJob {
   origin: string;
   destination: string;
   status: string;
   progress: number;
+  currentLocation?: { lat: number; lng: number };
 }
 
 interface JobPin {
@@ -19,25 +21,19 @@ interface JobPin {
   payment: number;
 }
 
+const LOCATION_WRITE_THROTTLE_MS = 10000;
+
 export default function MapView() {
   const { currentUser } = useAuth();
   const [activeJob, setActiveJob] = useState<ActiveJob | null>(null);
   const [allJobs, setAllJobs] = useState<JobPin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTracking, setIsTracking] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const lastWriteRef = useRef(0);
 
   useEffect(() => {
-    const fetchActiveJob = async () => {
-      if (!currentUser) return;
-      try {
-        const jobDoc = await getDoc(doc(db, 'activeJobs', currentUser.uid));
-        if (jobDoc.exists()) {
-          setActiveJob(jobDoc.data() as ActiveJob);
-        }
-      } catch (error) {
-        console.error('Error fetching active job:', error);
-      }
-    };
-
     const fetchAllJobs = async () => {
       try {
         const loadsSnapshot = await getDocs(collection(db, 'loads'));
@@ -57,8 +53,85 @@ export default function MapView() {
       }
     };
 
-    Promise.all([fetchActiveJob(), fetchAllJobs()]).finally(() => setLoading(false));
+    fetchAllJobs();
+
+    if (!currentUser) {
+      Promise.resolve().then(() => setLoading(false));
+      return;
+    }
+
+    // Real-time listener so the driver's own position updates live on screen
+    // as new GPS reports come in, without needing a page refresh.
+    const unsubscribe = onSnapshot(
+      doc(db, 'activeJobs', currentUser.uid),
+      (jobDoc) => {
+        setActiveJob(jobDoc.exists() ? (jobDoc.data() as ActiveJob) : null);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching active job:', error);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, [currentUser]);
+
+  // Stop tracking if we navigate away or the active job disappears (e.g. delivered)
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    };
+  }, []);
+
+  const handleToggleNavigation = () => {
+    if (!currentUser) return;
+
+    if (isTracking) {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      setIsTracking(false);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      setLocationError('Location tracking is not supported on this device.');
+      return;
+    }
+
+    setLocationError(null);
+    lastWriteRef.current = 0; // report immediately on a fresh start, don't wait out an old throttle window
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const now = Date.now();
+        if (now - lastWriteRef.current < LOCATION_WRITE_THROTTLE_MS) return;
+        lastWriteRef.current = now;
+
+        updateDoc(doc(db, 'activeJobs', currentUser.uid), {
+          currentLocation: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
+          locationUpdatedAt: serverTimestamp(),
+        }).catch((error) => {
+          console.error('Error updating location:', error);
+        });
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        setLocationError('Could not get your location. Check location permissions and try again.');
+        setIsTracking(false);
+      },
+      { enableHighAccuracy: true }
+    );
+
+    watchIdRef.current = watchId;
+    setIsTracking(true);
+  };
 
   if (loading) {
     return (
@@ -89,41 +162,28 @@ export default function MapView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Map placeholder */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 h-[600px] flex items-center justify-center relative">
-                <div className="text-center">
-                  <MapPin className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600 font-medium">Map Integration Coming Soon</p>
-                  <p className="text-sm text-gray-500 mt-2">Google Maps / Mapbox integration placeholder</p>
-                </div>
-
-                {/* Route indicators */}
-                <div className="absolute top-8 left-8 bg-white rounded-lg shadow-lg p-4 flex items-center gap-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <Truck className="w-5 h-5 text-green-600" />
+              <div className="h-[600px] relative">
+                {activeJob.currentLocation ? (
+                  <LiveLocationMap
+                    lat={activeJob.currentLocation.lat}
+                    lng={activeJob.currentLocation.lng}
+                    label={`${activeJob.origin} → ${activeJob.destination}`}
+                  />
+                ) : (
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <MapPin className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+                      <p className="text-gray-600 font-medium">Waiting for live location</p>
+                      <p className="text-sm text-gray-500 mt-2">Start navigation to begin sharing your position</p>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500">Current Location</div>
-                    <div className="font-semibold text-gray-900">{activeJob.origin}</div>
-                  </div>
-                </div>
-
-                <div className="absolute bottom-8 right-8 bg-white rounded-lg shadow-lg p-4 flex items-center gap-3">
-                  <div className="bg-red-100 p-2 rounded-full">
-                    <MapPin className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500">Destination</div>
-                    <div className="font-semibold text-gray-900">{activeJob.destination}</div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Route details sidebar */}
           <div className="space-y-4">
             <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -152,9 +212,23 @@ export default function MapView() {
                 </div>
               </div>
 
-              <button className="w-full mt-6 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+              {locationError && (
+                <div className="mt-4 flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>{locationError}</span>
+                </div>
+              )}
+
+              <button
+                onClick={handleToggleNavigation}
+                className={`w-full mt-6 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  isTracking
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
                 <Navigation className="w-5 h-5" />
-                Start Navigation
+                {isTracking ? 'Stop Navigation' : 'Start Navigation'}
               </button>
             </div>
 

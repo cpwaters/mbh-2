@@ -97,6 +97,8 @@ export default function Dashboard() {
           throw new Error('This load has already been accepted by another driver.');
         }
 
+        const loadData = loadSnap.data();
+
         transaction.update(loadRef, {
           active_loads_status: 'accepted',
           acceptedBy: currentUser.uid,
@@ -105,6 +107,7 @@ export default function Dashboard() {
 
         transaction.set(activeJobRef, {
           userId: currentUser.uid,
+          createdBy: loadData.createdBy,
           loadId: load.id,
           origin: load.origin,
           destination: load.destination,

@@ -46,8 +46,10 @@ service cloud.firestore {
     // Active jobs collection rules
     // Document ID must be the user's UID to enforce one active/accepted job per driver
     match /activeJobs/{userId} {
-      // Only the driver can read their own active job
-      allow read: if isOwner(userId);
+      // The driver can read their own active job; the load's creator (the
+      // distributor who posted it) can also read it, to live-track their load
+      allow read: if isOwner(userId)
+                  || (isAuthenticated() && resource.data.createdBy == request.auth.uid);
 
       // Driver can create their active job only if document ID matches their UID
       allow create: if isOwner(userId)
