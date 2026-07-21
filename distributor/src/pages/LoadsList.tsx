@@ -295,25 +295,25 @@ export default function LoadsList() {
       </div>
 
       {/* Loads List */}
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {loads.map((load) => (
           <div
             key={load.id}
             className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-start gap-4 flex-1">
-                <div className="bg-blue-100 p-3 rounded-lg">
+            <div className="flex items-start justify-between mb-4 gap-3">
+              <div className="flex items-start gap-4 flex-1 min-w-0">
+                <div className="bg-blue-100 p-3 rounded-lg flex-shrink-0">
                   <Package className="w-6 h-6 text-blue-600" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-500" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
                       <span className="font-semibold text-gray-900">{load.origin}</span>
                     </div>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
                         statusColors[load.status]
                       }`}
                     >
@@ -327,7 +327,7 @@ export default function LoadsList() {
                   <div className="mt-2 text-sm text-gray-500">{load.distance} miles</div>
                 </div>
               </div>
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-4 flex-shrink-0">
                 <div className="text-right">
                   <div className="text-2xl font-bold text-green-600">£{load.payment.toLocaleString()}</div>
                   <div className="text-sm text-gray-500">Payment</div>

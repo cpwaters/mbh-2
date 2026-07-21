@@ -28,14 +28,16 @@ function AppContent() {
       {currentUser ? (
         <>
           <Navigation onLogout={handleLogout} />
-          <Routes>
-            <Route path="/" element={<LoadsList />} />
-            <Route path="/create" element={<CreateLoad />} />
-            <Route path="/clear-loads" element={<ClearLoads />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <div className="pb-16 md:pb-0">
+            <Routes>
+              <Route path="/" element={<LoadsList />} />
+              <Route path="/create" element={<CreateLoad />} />
+              <Route path="/clear-loads" element={<ClearLoads />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </>
       ) : (
         <Routes>

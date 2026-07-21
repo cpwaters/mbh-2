@@ -197,20 +197,20 @@ export default function Profile() {
               </div>
 
               <div className="w-full space-y-3">
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Email</span>
-                  <span className="font-semibold text-gray-900 text-sm">{profile?.email || 'N/A'}</span>
+                <div className="flex justify-between items-start gap-3 py-2 border-b">
+                  <span className="text-gray-600 flex-shrink-0">Email</span>
+                  <span className="font-semibold text-gray-900 text-sm text-right break-all">{profile?.email || 'N/A'}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Username</span>
-                  <span className="font-semibold text-gray-900">@{profile?.username || 'N/A'}</span>
+                <div className="flex justify-between items-start gap-3 py-2 border-b">
+                  <span className="text-gray-600 flex-shrink-0">Username</span>
+                  <span className="font-semibold text-gray-900 text-right break-all">@{profile?.username || 'N/A'}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b">
-                  <span className="text-gray-600">Vehicles</span>
+                <div className="flex justify-between items-start gap-3 py-2 border-b">
+                  <span className="text-gray-600 flex-shrink-0">Vehicles</span>
                   <span className="font-semibold text-gray-900">{profile?.quantity_of_vehicles || 0}</span>
                 </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-600">Member Since</span>
+                <div className="flex justify-between items-start gap-3 py-2">
+                  <span className="text-gray-600 flex-shrink-0">Member Since</span>
                   <span className="font-semibold text-gray-900">{new Date().getFullYear()}</span>
                 </div>
               </div>

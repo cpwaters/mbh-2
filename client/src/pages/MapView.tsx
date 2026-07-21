@@ -358,13 +358,13 @@ export default function MapView() {
                 key={job.id}
                 className="bg-white rounded-lg shadow-md p-4 border border-gray-200 flex items-center justify-between gap-4"
               >
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 p-2 rounded-lg">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
                     <Package className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                       <span className="font-medium text-gray-900">{job.origin}</span>
                       <span className="text-gray-400">→</span>
                       <span className="font-medium text-gray-900">{job.destination}</span>
@@ -372,7 +372,7 @@ export default function MapView() {
                     <div className="text-sm text-gray-500 capitalize mt-0.5">{job.status.replace(/_/g, ' ')}</div>
                   </div>
                 </div>
-                <div className="text-lg font-bold text-green-600">£{job.payment.toLocaleString()}</div>
+                <div className="text-lg font-bold text-green-600 flex-shrink-0">£{job.payment.toLocaleString()}</div>
               </div>
             ))}
           </div>

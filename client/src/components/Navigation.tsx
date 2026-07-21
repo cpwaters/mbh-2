@@ -34,66 +34,116 @@ export default function Navigation({ onLogout }: NavigationProps) {
   }, [currentUser]);
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/active', label: 'Active Jobs', icon: Truck },
-    { path: '/map', label: 'Map', icon: Map },
-    { path: '/driving', label: 'Driving Time', icon: Clock },
-    { path: '/earnings', label: 'Earnings', icon: TrendingUp },
-    { path: '/profile', label: 'Profile', icon: User, isProfile: true },
+    { path: '/', label: 'Dashboard', mobileLabel: 'Home', icon: LayoutDashboard },
+    { path: '/active', label: 'Active Jobs', mobileLabel: 'Jobs', icon: Truck },
+    { path: '/map', label: 'Map', mobileLabel: 'Map', icon: Map },
+    { path: '/driving', label: 'Driving Time', mobileLabel: 'Time', icon: Clock },
+    { path: '/earnings', label: 'Earnings', mobileLabel: 'Earn', icon: TrendingUp },
+    { path: '/profile', label: 'Profile', mobileLabel: 'Profile', icon: User, isProfile: true },
   ];
 
   return (
-    <nav className="bg-white shadow-md border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
-            <Truck className="w-8 h-8 text-blue-600" />
-            <h1 className="text-2xl font-bold text-gray-900">MyBackHaul</h1>
-          </div>
+    <>
+      <nav className="bg-white shadow-md border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-2">
+              <Truck className="w-8 h-8 text-blue-600" />
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900">MyBackHaul</h1>
+            </div>
 
-          <div className="flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isProfileLink = item.path === '/profile';
-              return (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      isActive
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    }`
-                  }
-                >
-                  {isProfileLink && profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt="Profile"
-                      className="w-6 h-6 rounded-full object-cover border border-gray-300"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <Icon className="w-5 h-5" />
-                  )}
-                  <span className="hidden md:inline">{item.label}</span>
-                </NavLink>
-              );
-            })}
+            {/* Full nav + logout, desktop only */}
+            <div className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isProfileLink = item.path === '/profile';
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                        isActive
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }`
+                    }
+                  >
+                    {isProfileLink && profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="w-6 h-6 rounded-full object-cover border border-gray-300"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <Icon className="w-5 h-5" />
+                    )}
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors ml-2"
+                title="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Logout</span>
+              </button>
+            </div>
+
+            {/* Mobile: just logout, main nav moves to the bottom tab bar */}
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors ml-2"
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
-              <span className="hidden md:inline">Logout</span>
             </button>
           </div>
         </div>
+      </nav>
+
+      {/* Mobile bottom tab bar */}
+      <div
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="grid grid-cols-6">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isProfileLink = item.path === '/profile';
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium ${
+                    isActive ? 'text-blue-600' : 'text-gray-500'
+                  }`
+                }
+              >
+                {isProfileLink && profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Profile"
+                    className="w-5 h-5 rounded-full object-cover border border-gray-300"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <Icon className="w-5 h-5" />
+                )}
+                <span>{item.mobileLabel}</span>
+              </NavLink>
+            );
+          })}
+        </div>
       </div>
-    </nav>
+    </>
   );
 }

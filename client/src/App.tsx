@@ -33,18 +33,20 @@ function AppContent() {
       {currentUser ? (
         <>
           <Navigation onLogout={handleLogout} />
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/active" element={<ActiveJobs />} />
-            <Route path="/map" element={<MapView />} />
-            <Route path="/driving" element={<DrivingTime />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/earnings" element={<Earnings />} />
-            <Route path="/profile/edit" element={<EditProfile />} />
-            <Route path="/vehicles/add" element={<AddVehicle />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <div className="pb-16 md:pb-0">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/active" element={<ActiveJobs />} />
+              <Route path="/map" element={<MapView />} />
+              <Route path="/driving" element={<DrivingTime />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/earnings" element={<Earnings />} />
+              <Route path="/profile/edit" element={<EditProfile />} />
+              <Route path="/vehicles/add" element={<AddVehicle />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </>
       ) : (
         <Routes>
