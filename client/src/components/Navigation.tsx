@@ -45,15 +45,17 @@ export default function Navigation({ onLogout }: NavigationProps) {
   return (
     <>
       <nav className="bg-white shadow-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
               <Truck className="w-8 h-8 text-blue-600" />
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">MyBackHaul</h1>
+              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">MyBackHaul</h1>
             </div>
 
-            {/* Full nav + logout, desktop only */}
-            <div className="hidden md:flex items-center gap-1">
+            {/* Full nav + logout, desktop only. Needs >=1024px of natural width, so this
+                only kicks in at lg: rather than md: -- otherwise it doesn't fit and Logout
+                gets pushed off-screen in the ~768-1024px tablet/narrow-laptop range. */}
+            <div className="hidden lg:flex items-center gap-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isProfileLink = item.path === '/profile';
@@ -62,7 +64,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      `flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
                         isActive
                           ? 'bg-blue-100 text-blue-700'
                           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -87,7 +89,7 @@ export default function Navigation({ onLogout }: NavigationProps) {
               })}
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors ml-2"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors ml-2"
                 title="Logout"
               >
                 <LogOut className="w-5 h-5" />
@@ -95,10 +97,10 @@ export default function Navigation({ onLogout }: NavigationProps) {
               </button>
             </div>
 
-            {/* Mobile: just logout, main nav moves to the bottom tab bar */}
+            {/* Below lg: just logout, main nav moves to the bottom tab bar */}
             <button
               onClick={onLogout}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
@@ -107,9 +109,9 @@ export default function Navigation({ onLogout }: NavigationProps) {
         </div>
       </nav>
 
-      {/* Mobile bottom tab bar */}
+      {/* Bottom tab bar, shown below lg: */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="grid grid-cols-6">
