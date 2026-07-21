@@ -45,6 +45,7 @@ export default function MapView() {
   const [showLocationConsent, setShowLocationConsent] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const lastWriteRef = useRef(0);
+  const hasCheckedPermissionOnEntryRef = useRef(false);
 
   // Check the device's current geolocation permission so we know whether to
   // show our own "why we need this" dialog first, or whether it's already
@@ -69,6 +70,23 @@ export default function MapView() {
       if (status) status.onchange = null;
     };
   }, []);
+
+  // Ask about location as soon as there's a job to navigate, rather than
+  // waiting for the driver to press "Start Navigation". Only fires once per
+  // page visit -- 'unknown' means the permission query above hasn't resolved
+  // yet, so wait for a real answer before deciding what to show.
+  useEffect(() => {
+    if (!activeJob || hasCheckedPermissionOnEntryRef.current || locationPermission === 'unknown') return;
+    hasCheckedPermissionOnEntryRef.current = true;
+
+    if (locationPermission === 'denied') {
+      setLocationError(
+        'Location access is blocked for this site, so your position can\'t be shared. Enable it in your browser/device settings, then reload this page.'
+      );
+    } else if (locationPermission === 'prompt' || locationPermission === 'unsupported') {
+      setShowLocationConsent(true);
+    }
+  }, [activeJob, locationPermission]);
 
   useEffect(() => {
     const fetchAllJobs = async () => {
