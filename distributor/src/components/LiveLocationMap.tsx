@@ -76,6 +76,12 @@ export default function LiveLocationMap({ currentLocation, origin, destination, 
       zoom={13}
       style={{ height: '100%', width: '100%' }}
       scrollWheelZoom={false}
+      // On touch devices, a single finger should scroll the page, not pan the
+      // map -- Leaflet's TouchZoom handler already provides full two-finger
+      // pan+zoom independently of this, so disabling single-touch dragging
+      // doesn't lose any capability. Left enabled on desktop, where mouse
+      // click-drag has no competing scroll gesture to worry about.
+      dragging={!L.Browser.touch}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
