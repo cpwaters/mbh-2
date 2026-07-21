@@ -122,9 +122,12 @@ export default function Navigation({ onLogout }: NavigationProps) {
         </div>
       </nav>
 
-      {/* Mobile bottom tab bar */}
+      {/* Mobile bottom tab bar. z-index needs to clear Leaflet's own panes (up
+          to 1000) -- its container normally isolates its own stacking
+          context, but that doesn't reliably hold on every mobile browser, so
+          this sits comfortably above it regardless. */}
       <div
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200"
+        className="md:hidden fixed bottom-0 inset-x-0 z-[1100] bg-white border-t border-gray-200"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="grid grid-cols-3">
