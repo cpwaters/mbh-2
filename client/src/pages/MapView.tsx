@@ -7,6 +7,7 @@ import LiveLocationMap from '../components/LiveLocationMap';
 import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
 import { getDrivingRoute } from '../lib/routing';
 import { getWhat3Words } from '../lib/w3w';
+import { openNativeNavigation } from '../lib/nativeNav';
 
 interface ActiveJob {
   origin: string;
@@ -174,6 +175,13 @@ export default function MapView() {
 
     if (!navigator.geolocation) {
       setLocationError('Location tracking is not supported on this device.');
+      return;
+    }
+
+    if (destinationPin) {
+      openNativeNavigation(originPin, destinationPin);
+    } else {
+      setLocationError('Still working out the destination -- try again in a moment.');
       return;
     }
 
