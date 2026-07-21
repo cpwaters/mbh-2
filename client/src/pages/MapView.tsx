@@ -39,8 +39,36 @@ export default function MapView() {
   const [routeGeometry, setRouteGeometry] = useState<GeoPoint[] | null>(null);
   const [originW3W, setOriginW3W] = useState<string | null>(null);
   const [destinationW3W, setDestinationW3W] = useState<string | null>(null);
+  const [locationPermission, setLocationPermission] = useState<
+    'unknown' | 'granted' | 'denied' | 'prompt' | 'unsupported'
+  >('unknown');
+  const [showLocationConsent, setShowLocationConsent] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const lastWriteRef = useRef(0);
+
+  // Check the device's current geolocation permission so we know whether to
+  // show our own "why we need this" dialog first, or whether it's already
+  // been decided (granted/denied) and we can act on that directly.
+  useEffect(() => {
+    if (!navigator.permissions?.query) {
+      setLocationPermission('unsupported');
+      return;
+    }
+
+    let status: PermissionStatus | null = null;
+    navigator.permissions
+      .query({ name: 'geolocation' as PermissionName })
+      .then((result) => {
+        status = result;
+        setLocationPermission(result.state as 'granted' | 'denied' | 'prompt');
+        result.onchange = () => setLocationPermission(result.state as 'granted' | 'denied' | 'prompt');
+      })
+      .catch(() => setLocationPermission('unsupported'));
+
+    return () => {
+      if (status) status.onchange = null;
+    };
+  }, []);
 
   useEffect(() => {
     const fetchAllJobs = async () => {
@@ -161,27 +189,11 @@ export default function MapView() {
     }
   }, [destinationPin]);
 
-  const handleToggleNavigation = () => {
+  const beginLocationTracking = () => {
     if (!currentUser) return;
-
-    if (isTracking) {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      setIsTracking(false);
-      return;
-    }
 
     if (!navigator.geolocation) {
       setLocationError('Location tracking is not supported on this device.');
-      return;
-    }
-
-    if (destinationPin) {
-      openNativeNavigation(originPin, destinationPin);
-    } else {
-      setLocationError('Still working out the destination -- try again in a moment.');
       return;
     }
 
@@ -189,6 +201,7 @@ export default function MapView() {
     lastWriteRef.current = 0; // report immediately on a fresh start, don't wait out an old throttle window
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
+        setLocationPermission('granted');
         const now = Date.now();
         if (now - lastWriteRef.current < LOCATION_WRITE_THROTTLE_MS) return;
         lastWriteRef.current = now;
@@ -205,7 +218,12 @@ export default function MapView() {
       },
       (error) => {
         console.error('Geolocation error:', error);
-        setLocationError('Could not get your location. Check location permissions and try again.');
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationPermission('denied');
+          setLocationError('Location access was denied, so your position can\'t be shared. Enable location for this site in your browser/device settings to turn it back on.');
+        } else {
+          setLocationError('Could not get your location. Check location permissions and try again.');
+        }
         setIsTracking(false);
       },
       { enableHighAccuracy: true }
@@ -213,6 +231,43 @@ export default function MapView() {
 
     watchIdRef.current = watchId;
     setIsTracking(true);
+  };
+
+  const handleToggleNavigation = () => {
+    if (!currentUser) return;
+
+    if (isTracking) {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      setIsTracking(false);
+      return;
+    }
+
+    if (destinationPin) {
+      openNativeNavigation(originPin, destinationPin);
+    } else {
+      setLocationError('Still working out the destination -- try again in a moment.');
+      return;
+    }
+
+    setLocationError(null);
+
+    if (locationPermission === 'denied') {
+      setLocationError('Location access is blocked for this site. Enable it in your browser/device settings, then try again.');
+      return;
+    }
+
+    if (locationPermission === 'granted') {
+      beginLocationTracking();
+      return;
+    }
+
+    // Permission not yet decided (or the Permissions API isn't supported) --
+    // ask in-app first, and only trigger the device's own permission prompt
+    // if the driver agrees here.
+    setShowLocationConsent(true);
   };
 
   if (loading) {
@@ -378,6 +433,41 @@ export default function MapView() {
           </div>
         )}
       </div>
+
+      {showLocationConsent && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-blue-100 p-2 rounded-full">
+                <MapPin className="w-5 h-5 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Share your location?</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              MyBackHaul uses your device's location to share your live position with the
+              distributor while you're navigating this job. Your location is only shared while
+              navigation is active.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowLocationConsent(false);
+                  beginLocationTracking();
+                }}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                Allow Location Access
+              </button>
+              <button
+                onClick={() => setShowLocationConsent(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Not Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
