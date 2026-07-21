@@ -453,7 +453,10 @@ export default function MapView() {
       </div>
 
       {showLocationConsent && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        // z-index needs to clear Leaflet's own panes (up to 1000) for the same
+        // reason the bottom tab bar did -- its stacking-context isolation
+        // isn't reliable on every mobile browser.
+        <div className="fixed inset-0 bg-black/50 z-[1200] flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="bg-blue-100 p-2 rounded-full">
