@@ -217,7 +217,7 @@ export default function ActiveJobs() {
                       <span className="font-semibold text-gray-900">{job.origin}</span>
                     </div>
                     <div className="flex items-center gap-2 text-gray-600">
-                      <span className="text-gray-400 ml-6">→</span>
+                      <span className="text-gray-400 w-4 text-center flex-shrink-0">→</span>
                       <span className="font-semibold">{job.destination}</span>
                     </div>
                   </div>
