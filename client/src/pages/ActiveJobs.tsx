@@ -204,26 +204,24 @@ export default function ActiveJobs() {
                 key={job.id}
                 className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color} flex items-center gap-2`}>
-                        <StatusIcon className="w-4 h-4" />
-                        {statusInfo.label}
-                      </span>
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color} flex items-center gap-2`}>
+                      <StatusIcon className="w-4 h-4" />
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  <div className="space-y-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span className="font-semibold text-gray-900">{job.origin}</span>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-gray-500" />
-                        <span className="font-semibold text-gray-900">{job.origin}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <span className="text-gray-400 ml-6">→</span>
-                        <span className="font-semibold">{job.destination}</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <span className="text-gray-400 ml-6">→</span>
+                      <span className="font-semibold">{job.destination}</span>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div>
                     <div className="text-2xl font-bold text-green-600">{job.payment}</div>
                     <div className="text-sm text-gray-500">Payment</div>
                   </div>
@@ -249,20 +247,20 @@ export default function ActiveJobs() {
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => navigate('/map')}
-                    className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="w-full sm:flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >
                     View Route
                   </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                     Contact Support
                   </button>
                   <button
                     onClick={() => handleComplete(job)}
                     disabled={completingJobId === job.id}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {completingJobId === job.id ? 'Completing...' : 'Mark Delivered'}
                   </button>
