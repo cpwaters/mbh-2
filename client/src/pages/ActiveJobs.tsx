@@ -211,7 +211,7 @@ export default function ActiveJobs() {
                       {statusInfo.label}
                     </span>
                   </div>
-                  <div className="space-y-2 mb-3">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-gray-500" />
                       <span className="font-semibold text-gray-900">{job.origin}</span>
@@ -221,46 +221,44 @@ export default function ActiveJobs() {
                       <span className="font-semibold">{job.destination}</span>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">{job.payment}</div>
-                    <div className="text-sm text-gray-500">Payment</div>
-                  </div>
                 </div>
 
-                <div className="mb-4">
+                <div className="mb-4 pt-4 border-t border-gray-100">
+                  <div className="text-2xl font-bold text-green-600">{job.payment}</div>
+                  <div className="text-sm text-gray-500">Payment</div>
+                </div>
+
+                <div className="mb-4 pt-4 border-t border-gray-100">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-gray-600">Progress</span>
                     <span className="font-medium text-gray-900">{job.progress}%</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                     <div
                       className="bg-blue-600 h-2 rounded-full transition-all"
                       style={{ width: `${job.progress}%` }}
                     ></div>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Clock className="w-4 h-4" />
                     <span>Est. Delivery: {job.deliveryTime}</span>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
                   <button
                     onClick={() => navigate('/map')}
-                    className="w-full sm:flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >
                     View Route
                   </button>
-                  <button className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button className="w-full px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                     Contact Support
                   </button>
                   <button
                     onClick={() => handleComplete(job)}
                     disabled={completingJobId === job.id}
-                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {completingJobId === job.id ? 'Completing...' : 'Mark Delivered'}
                   </button>
