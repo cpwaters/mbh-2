@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Package, MapPin, Weight, Box, AlertCircle } from 'lucide-react';
+import { Package, Weight, Box, AlertCircle } from 'lucide-react';
 import { collection, doc, getDoc, getDocs, query, runTransaction, serverTimestamp, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { JobCard, JobCardRoute, JobCardPayment, JobCardSection, JobCardActions, JobCardStatusBadge } from '../components/JobCard';
 
 interface Load {
   id: string;
@@ -175,81 +176,66 @@ export default function Dashboard() {
       ) : (
         <div className="grid gap-4">
           {loads.map((load) => (
-          <div
-            key={load.id}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-start gap-4">
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <Package className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    <span className="font-semibold text-gray-900">{load.origin}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <span className="text-gray-400">→</span>
-                    <span className="font-semibold">{load.destination}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-green-600">£{load.payment.toLocaleString()}</div>
-                <div className="text-sm text-gray-500">Payment</div>
-              </div>
-            </div>
+          <JobCard key={load.id}>
+            <JobCardRoute
+              badge={<JobCardStatusBadge status="available" />}
+              origin={load.origin}
+              destination={load.destination}
+            />
+
+            <JobCardPayment amount={`£${load.payment.toLocaleString()}`} />
 
             {expandedLoadId === load.id && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 pt-4 border-t border-gray-100">
-                <div>
-                  <div className="text-xs text-gray-500">Distance</div>
-                  <div className="font-medium text-gray-900">{load.distance} miles</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Weight className="w-4 h-4 text-gray-500" />
+              <JobCardSection>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                   <div>
-                    <div className="text-xs text-gray-500">Weight</div>
-                    <div className="font-medium text-gray-900">{load.weight} kg</div>
+                    <div className="text-xs text-gray-500">Distance</div>
+                    <div className="font-medium text-gray-900">{load.distance} miles</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Weight className="w-4 h-4 text-gray-500" />
+                    <div>
+                      <div className="text-xs text-gray-500">Weight</div>
+                      <div className="font-medium text-gray-900">{load.weight} kg</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Box className="w-4 h-4 text-gray-500" />
+                    <div>
+                      <div className="text-xs text-gray-500">Pallets</div>
+                      <div className="font-medium text-gray-900">{load.pallets}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Pickup</div>
+                    <div className="font-medium text-gray-900">{load.pickupDate}</div>
+                    <div className="text-xs text-gray-600 mt-0.5">{load.pickupTime}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Delivery</div>
+                    <div className="font-medium text-gray-900">{load.deliveryDate}</div>
+                    <div className="text-xs text-gray-600 mt-0.5">{load.deliveryTime}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Box className="w-4 h-4 text-gray-500" />
-                  <div>
-                    <div className="text-xs text-gray-500">Pallets</div>
-                    <div className="font-medium text-gray-900">{load.pallets}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Pickup</div>
-                  <div className="font-medium text-gray-900">{load.pickupDate}</div>
-                  <div className="text-xs text-gray-600 mt-0.5">{load.pickupTime}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Delivery</div>
-                  <div className="font-medium text-gray-900">{load.deliveryDate}</div>
-                  <div className="text-xs text-gray-600 mt-0.5">{load.deliveryTime}</div>
-                </div>
-              </div>
+              </JobCardSection>
             )}
 
-            <div className="flex gap-3">
+            <JobCardActions>
               <button
                 onClick={() => handleAccept(load)}
                 disabled={hasActiveJob || acceptingLoadId === load.id}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                className="w-full sm:flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
               >
                 {acceptingLoadId === load.id ? 'Accepting...' : 'Accept Load'}
               </button>
               <button
                 onClick={() => setExpandedLoadId(expandedLoadId === load.id ? null : load.id)}
-                className="px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 {expandedLoadId === load.id ? 'Hide Details' : 'View Details'}
               </button>
-            </div>
-          </div>
+            </JobCardActions>
+          </JobCard>
         ))}
         </div>
       )}

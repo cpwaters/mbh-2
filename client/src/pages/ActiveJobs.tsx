@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle, Clock, MapPin, Navigation } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { JobCard, JobCardRoute, JobCardPayment, JobCardSection, JobCardActions } from '../components/JobCard';
 
 interface Job {
   id: string;
@@ -200,35 +201,21 @@ export default function ActiveJobs() {
             const StatusIcon = statusInfo.icon;
 
             return (
-              <div
-                key={job.id}
-                className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-              >
-                <div className="mb-4">
-                  <div className="flex items-center gap-3 mb-3">
+              <JobCard key={job.id}>
+                <JobCardRoute
+                  badge={
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusInfo.color} flex items-center gap-2`}>
                       <StatusIcon className="w-4 h-4" />
                       {statusInfo.label}
                     </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-500" />
-                      <span className="font-semibold text-gray-900">{job.origin}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <span className="text-gray-400 w-4 text-center flex-shrink-0">→</span>
-                      <span className="font-semibold">{job.destination}</span>
-                    </div>
-                  </div>
-                </div>
+                  }
+                  origin={job.origin}
+                  destination={job.destination}
+                />
 
-                <div className="mb-4 pt-4 border-t border-gray-100">
-                  <div className="text-2xl font-bold text-green-600">{job.payment}</div>
-                  <div className="text-sm text-gray-500">Payment</div>
-                </div>
+                <JobCardPayment amount={job.payment} />
 
-                <div className="mb-4 pt-4 border-t border-gray-100">
+                <JobCardSection>
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-gray-600">Progress</span>
                     <span className="font-medium text-gray-900">{job.progress}%</span>
@@ -243,27 +230,27 @@ export default function ActiveJobs() {
                     <Clock className="w-4 h-4" />
                     <span>Est. Delivery: {job.deliveryTime}</span>
                   </div>
-                </div>
+                </JobCardSection>
 
-                <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                <JobCardActions>
                   <button
                     onClick={() => navigate('/map')}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                    className="w-full sm:flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                   >
                     View Route
                   </button>
-                  <button className="w-full px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                  <button className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                     Contact Support
                   </button>
                   <button
                     onClick={() => handleComplete(job)}
                     disabled={completingJobId === job.id}
-                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {completingJobId === job.id ? 'Completing...' : 'Mark Delivered'}
                   </button>
-                </div>
-              </div>
+                </JobCardActions>
+              </JobCard>
             );
           })}
         </div>

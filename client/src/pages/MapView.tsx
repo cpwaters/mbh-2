@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, Navigation, MapPin, Package } from 'lucide-react';
+import { AlertCircle, Navigation, MapPin } from 'lucide-react';
 import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode'
 import { getDrivingRoute } from '../lib/routing';
 import { getWhat3Words } from '../lib/w3w';
 import { openNativeNavigation } from '../lib/nativeNav';
+import { JobCard, JobCardRoute, JobCardPayment, JobCardStatusBadge } from '../components/JobCard';
 
 interface ActiveJob {
   origin: string;
@@ -462,28 +463,16 @@ export default function MapView() {
             No jobs found.
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div className="grid gap-4">
             {allJobs.map((job) => (
-              <div
-                key={job.id}
-                className="bg-white rounded-lg shadow-md p-4 border border-gray-200 flex items-center justify-between gap-4"
-              >
-                <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="bg-blue-100 p-2 rounded-lg flex-shrink-0">
-                    <Package className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                      <span className="font-medium text-gray-900">{job.origin}</span>
-                      <span className="text-gray-400">→</span>
-                      <span className="font-medium text-gray-900">{job.destination}</span>
-                    </div>
-                    <div className="text-sm text-gray-500 capitalize mt-0.5">{job.status.replace(/_/g, ' ')}</div>
-                  </div>
-                </div>
-                <div className="text-lg font-bold text-green-600 flex-shrink-0">£{job.payment.toLocaleString()}</div>
-              </div>
+              <JobCard key={job.id}>
+                <JobCardRoute
+                  badge={<JobCardStatusBadge status={job.status} />}
+                  origin={job.origin}
+                  destination={job.destination}
+                />
+                <JobCardPayment amount={`£${job.payment.toLocaleString()}`} />
+              </JobCard>
             ))}
           </div>
         )}

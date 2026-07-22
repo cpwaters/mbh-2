@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, MapPin, Weight, Box, Calendar, Clock, Navigation, XCircle } from 'lucide-react';
+import { Package, Weight, Box, Clock, Navigation, XCircle } from 'lucide-react';
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,6 +7,7 @@ import LiveLocationMap from '../components/LiveLocationMap';
 import { extractPostcode, geocodePostcode, type GeoPoint } from '../lib/geocode';
 import { getDrivingRoute } from '../lib/routing';
 import { getWhat3Words } from '../lib/w3w';
+import { JobCard, JobCardRoute, JobCardPayment, JobCardSection, JobCardActions, JobCardStatusBadge } from '../components/JobCard';
 
 const TRACKABLE_STATUSES = ['accepted', 'collected', 'in_transit'];
 
@@ -25,17 +26,6 @@ interface Load {
   status: 'available' | 'accepted' | 'collected' | 'in_transit' | 'delivered' | 'closed' | 'paid' | 'cancelled';
   createdBy: string;
 }
-
-const statusColors = {
-  available: 'bg-green-100 text-green-800',
-  accepted: 'bg-blue-100 text-blue-800',
-  collected: 'bg-purple-100 text-purple-800',
-  in_transit: 'bg-yellow-100 text-yellow-800',
-  delivered: 'bg-indigo-100 text-indigo-800',
-  closed: 'bg-gray-100 text-gray-800',
-  paid: 'bg-emerald-100 text-emerald-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
 
 export default function LoadsList() {
   const [loads, setLoads] = useState<Load[]>([]);
@@ -297,69 +287,35 @@ export default function LoadsList() {
       {/* Loads List */}
       <div className="grid grid-cols-1 gap-4">
         {loads.map((load) => (
-          <div
-            key={load.id}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
-          >
-            <div className="flex items-start justify-between mb-4 gap-3">
-              <div className="flex items-start gap-4 flex-1 min-w-0">
-                <div className="bg-blue-100 p-3 rounded-lg flex-shrink-0">
-                  <Package className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                      <span className="font-semibold text-gray-900">{load.origin}</span>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ${
-                        statusColors[load.status]
-                      }`}
-                    >
-                      {load.status.charAt(0).toUpperCase() + load.status.slice(1).replace('_', ' ')}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <span className="text-gray-400">→</span>
-                    <span className="font-semibold">{load.destination}</span>
-                  </div>
-                  <div className="mt-2 text-sm text-gray-500">{load.distance} miles</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-4 flex-shrink-0">
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-green-600">£{load.payment.toLocaleString()}</div>
-                  <div className="text-sm text-gray-500">Payment</div>
-                </div>
-                <button
-                  onClick={() => handleCancel(load)}
-                  disabled={load.status !== 'available' || cancellingId === load.id}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                  title={load.status === 'available' ? 'Cancel load' : 'Only available loads can be cancelled'}
-                >
-                  <XCircle className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+          <JobCard key={load.id}>
+            <JobCardRoute
+              badge={<JobCardStatusBadge status={load.status} />}
+              origin={load.origin}
+              destination={load.destination}
+            />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Weight className="w-4 h-4 text-gray-500" />
+            <JobCardPayment amount={`£${load.payment.toLocaleString()}`} />
+
+            <JobCardSection>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div>
-                  <div className="text-xs text-gray-500">Weight</div>
-                  <div className="font-medium text-gray-900">{load.weight} kg</div>
+                  <div className="text-xs text-gray-500">Distance</div>
+                  <div className="font-medium text-gray-900">{load.distance} miles</div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Box className="w-4 h-4 text-gray-500" />
-                <div>
-                  <div className="text-xs text-gray-500">Pallets</div>
-                  <div className="font-medium text-gray-900">{load.pallets}</div>
+                <div className="flex items-center gap-2">
+                  <Weight className="w-4 h-4 text-gray-500" />
+                  <div>
+                    <div className="text-xs text-gray-500">Weight</div>
+                    <div className="font-medium text-gray-900">{load.weight} kg</div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
+                <div className="flex items-center gap-2">
+                  <Box className="w-4 h-4 text-gray-500" />
+                  <div>
+                    <div className="text-xs text-gray-500">Pallets</div>
+                    <div className="font-medium text-gray-900">{load.pallets}</div>
+                  </div>
+                </div>
                 <div>
                   <div className="text-xs text-gray-500">Pickup</div>
                   <div className="font-medium text-gray-900">{load.pickupDate}</div>
@@ -368,9 +324,6 @@ export default function LoadsList() {
                     {load.pickupTime}
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-gray-500" />
                 <div>
                   <div className="text-xs text-gray-500">Delivery</div>
                   <div className="font-medium text-gray-900">{load.deliveryDate}</div>
@@ -380,48 +333,58 @@ export default function LoadsList() {
                   </div>
                 </div>
               </div>
-            </div>
+            </JobCardSection>
 
-            {TRACKABLE_STATUSES.includes(load.status) && (
-              <>
+            <JobCardActions>
+              {TRACKABLE_STATUSES.includes(load.status) && (
                 <button
                   onClick={() => handleToggleTracking(load.id)}
-                  className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                  className="w-full sm:flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
                   <Navigation className="w-4 h-4" />
                   {trackedLoadId === load.id ? 'Hide Live Location' : 'Track Live Location'}
                 </button>
+              )}
+              <button
+                onClick={() => handleCancel(load)}
+                disabled={load.status !== 'available' || cancellingId === load.id}
+                className="w-full sm:w-auto px-4 py-2 border border-red-300 text-red-600 rounded-lg font-medium hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent flex items-center justify-center gap-2"
+                title={load.status === 'available' ? 'Cancel load' : 'Only available loads can be cancelled'}
+              >
+                <XCircle className="w-4 h-4" />
+                {cancellingId === load.id ? 'Cancelling...' : 'Cancel Load'}
+              </button>
+            </JobCardActions>
 
-                {trackedLoadId === load.id && (trackedOriginW3W || trackedDestinationW3W) && (
-                  <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs font-mono text-blue-600">
+            {trackedLoadId === load.id && (
+              <JobCardSection>
+                {(trackedOriginW3W || trackedDestinationW3W) && (
+                  <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-xs font-mono text-blue-600">
                     {trackedOriginW3W && <span>Origin: ///{trackedOriginW3W}</span>}
                     {trackedDestinationW3W && <span>Destination: ///{trackedDestinationW3W}</span>}
                   </div>
                 )}
-
-                {trackedLoadId === load.id && (
-                  <div className="mt-3 h-72 rounded-lg overflow-hidden border border-gray-200">
-                    {trackedOriginPin || trackedDestinationPin || trackedLocation ? (
-                      <LiveLocationMap
-                        origin={trackedOriginPin ? { ...trackedOriginPin, label: load.origin } : undefined}
-                        destination={
-                          trackedDestinationPin ? { ...trackedDestinationPin, label: load.destination } : undefined
-                        }
-                        currentLocation={
-                          trackedLocation ? { ...trackedLocation, label: 'Driver location' } : undefined
-                        }
-                        routeGeometry={trackedRouteGeometry ?? undefined}
-                      />
-                    ) : (
-                      <div className="h-full flex items-center justify-center bg-gray-50 text-gray-500 text-sm">
-                        Loading route...
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
+                <div className="h-72 rounded-lg overflow-hidden border border-gray-200">
+                  {trackedOriginPin || trackedDestinationPin || trackedLocation ? (
+                    <LiveLocationMap
+                      origin={trackedOriginPin ? { ...trackedOriginPin, label: load.origin } : undefined}
+                      destination={
+                        trackedDestinationPin ? { ...trackedDestinationPin, label: load.destination } : undefined
+                      }
+                      currentLocation={
+                        trackedLocation ? { ...trackedLocation, label: 'Driver location' } : undefined
+                      }
+                      routeGeometry={trackedRouteGeometry ?? undefined}
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center bg-gray-50 text-gray-500 text-sm">
+                      Loading route...
+                    </div>
+                  )}
+                </div>
+              </JobCardSection>
             )}
-          </div>
+          </JobCard>
         ))}
       </div>
 
