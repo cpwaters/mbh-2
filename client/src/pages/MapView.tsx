@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Navigation, MapPin, Package } from 'lucide-react';
 import { collection, doc, getDocs, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -26,6 +26,16 @@ interface JobPin {
 }
 
 const LOCATION_WRITE_THROTTLE_MS = 10000;
+
+function haversineMiles(a: GeoPoint, b: GeoPoint): number {
+  const EARTH_RADIUS_MILES = 3958.8;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return EARTH_RADIUS_MILES * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
 
 export default function MapView() {
   const { currentUser } = useAuth();
@@ -170,6 +180,22 @@ export default function MapView() {
     // object, so this doesn't re-geocode on every live GPS position update.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeJob?.origin, activeJob?.destination]);
+
+  // Mileage between origin and destination: sum of the actual road route when
+  // available, falling back to a straight-line estimate otherwise.
+  const routeMiles = useMemo(() => {
+    if (routeGeometry && routeGeometry.length > 1) {
+      let total = 0;
+      for (let i = 1; i < routeGeometry.length; i++) {
+        total += haversineMiles(routeGeometry[i - 1], routeGeometry[i]);
+      }
+      return total;
+    }
+    if (originPin && destinationPin) {
+      return haversineMiles(originPin, destinationPin);
+    }
+    return null;
+  }, [routeGeometry, originPin, destinationPin]);
 
   // Fetch an actual road-following route once both endpoints are geocoded.
   // Falls back to a straight line (handled in LiveLocationMap) if this fails
@@ -412,6 +438,17 @@ export default function MapView() {
                     {destinationW3W && <div className="text-xs text-blue-600 font-mono mt-0.5">///{destinationW3W}</div>}
                   </div>
                 </div>
+                {routeMiles !== null && (
+                  <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
+                    <div className="bg-blue-100 p-1.5 rounded-full">
+                      <Navigation className="w-3.5 h-3.5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Distance</div>
+                      <div className="text-sm text-gray-500">{Math.round(routeMiles)} miles</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
